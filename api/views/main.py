@@ -1,6 +1,6 @@
 from api import app
 from flask import Blueprint, request
-from api.models import Person
+# from api.models import Person
 import json
 from flask import jsonify
 from api.utils import create_response, InvalidUsage
@@ -16,6 +16,7 @@ def index():
 @app.route('/persons')
 def name():
     try:
-        create_response(data=Person.query.all())
+        pass
+        # create_response(data=Person.query.all())
     except Exception as ex:
         return create_response(data={}, status=400, message=str(ex))

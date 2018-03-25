@@ -1,11 +1,11 @@
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
-from api import db, app
-import os 
+from api import app
+from config import config
+import os
 
 
 manager = Manager(app)
-migrate = Migrate(app, db)
 
 manager.add_command('db', MigrateCommand)
 
@@ -28,15 +28,15 @@ def test():
     unittest.TextTestRunner(verbosity=2).run(tests)
 
 
-@manager.command
-def recreate_db():
-    """
-    Recreates a local database. You probably should not use this on
-    production.
-    """
-    db.drop_all()
-    db.create_all()
-    db.session.commit()
+# @manager.command
+# def recreate_db():
+#     """
+#     Recreates a local database. You probably should not use this on
+#     production.
+#     """
+#     db.drop_all()
+#     db.create_all()
+#     db.session.commit()
 
 
 if __name__ == '__main__':
