@@ -8,7 +8,7 @@ class Config:
 
 
 class DevelopmentConfig(Config):
-    SQLALCHEMY_DATABASE_URI = 'postgresql://testusr:password@127.0.0.1:5432/testdb'
+    MONGO_URI = 'mongodb://localhost:27017/twitter'
     DEBUG = True
 
 

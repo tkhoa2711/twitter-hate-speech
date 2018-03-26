@@ -1,10 +1,6 @@
 # from api import db
 from sqlalchemy.dialects.postgresql import JSON
 from flask_sqlalchemy import SQLAlchemy
-from flask_pymongo import PyMongo
-
-from . import mongo
-
 
 
 # db = SQLAlchemy()
