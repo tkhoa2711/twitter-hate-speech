@@ -1,17 +1,19 @@
 import unittest
-from api.models import Person
-import requests
+
 
 class BasicTestCase(unittest.TestCase):
 
-    def test_index(self):
-        r = requests.get('http://127.0.0.1:5000/')
-        self.assertEqual(r.status_code,200)
+    def setUp(self):
+        # create a test client of the app
+        import api
+        self.app = api.app.test_client()
 
-    
-    def test_person_endpoint(self):
-        r = requests.get('http://127.0.0.1:5000/')
-        self.assertEqual(r.status_code,200)
-        json_dict = r.json()
-        self.assertEqual(json_dict['Status'],'Success')
-        self.assertIsNotNone(json_dict["Data"])
+        # propagate the exceptions to the test client
+        self.app.testing = True
+
+    def tearDown(self):
+        pass
+
+    def test_index(self):
+        r = self.app.get('/')
+        self.assertEqual(r.status_code, 200)
