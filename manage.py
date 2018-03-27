@@ -24,7 +24,7 @@ def runworker():
 def test():
     import unittest
 
-    tests = unittest.TestLoader().discover('tests')
+    tests = unittest.TestLoader().discover('tests', pattern="*test*.py")
     unittest.TextTestRunner(verbosity=2).run(tests)
 
 
