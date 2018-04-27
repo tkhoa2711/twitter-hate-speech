@@ -1,8 +1,7 @@
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
 from api import app
-from config import config
-import os
+from api import twitter
 
 
 manager = Manager(app)
@@ -12,6 +11,8 @@ manager.add_command('db', MigrateCommand)
 
 @manager.command
 def runserver():
+    from config import config
+    stream = twitter.create_stream(config)
     app.run(debug=True, host='0.0.0.0', port=5000)
 
 

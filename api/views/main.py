@@ -1,9 +1,6 @@
 from api import app
-from flask import Blueprint, request
-# from api.models import Person
-import json
-from flask import jsonify
-from api.utils import create_response, InvalidUsage
+from flask import Blueprint
+from api.utils import create_response
 
 mod = Blueprint('main', __name__)
 
