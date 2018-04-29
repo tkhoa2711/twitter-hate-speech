@@ -25,6 +25,10 @@ def runworker():
 def test():
     import unittest
 
+    # TODO: refactor this part, have a proper environment for QA/testing
+    import os
+    os.environ['FLASK_ENV'] = 'dev'
+
     tests = unittest.TestLoader().discover('tests', pattern="*test*.py")
     unittest.TextTestRunner(verbosity=2).run(tests)
 
