@@ -1,13 +1,8 @@
-import json
 import os
+from dotenv import load_dotenv
 
 
-_CONFIG_FILE = 'keys.json'
-_CONFIG = None
-
-# TODO: handle possible exceptions
-with open(_CONFIG_FILE, 'r') as f:
-    _CONFIG = json.load(f)
+load_dotenv()
 
 
 # https://stackoverflow.com/questions/2352181/how-to-use-a-dot-to-access-members-of-dictionary
@@ -21,30 +16,25 @@ class dotdict(dict):
 
 class Config:
     SECRET_KEY = 'testkey'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-    HATE_WORD_LIST_FILE = _CONFIG['HATE_WORD_LIST_FILE']
+    MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/twitter')
 
 
 class DevelopmentConfig(Config):
-    MONGO_URI = 'mongodb://localhost:27017/twitter'
     DEBUG = True
 
     TWITTER = dotdict({
-        'CONSUMER_KEY': _CONFIG['TWITTER']['CONSUMER_KEY'],
-        'CONSUMER_SECRET': _CONFIG['TWITTER']['CONSUMER_SECRET'],
-        'ACCESS_TOKEN': _CONFIG['TWITTER']['ACCESS_TOKEN'],
-        'ACCESS_SECRET': _CONFIG['TWITTER']['ACCESS_SECRET'],
+        'CONSUMER_KEY': os.environ.get('TWITTER_CONSUMER_KEY', ''),
+        'CONSUMER_SECRET': os.environ.get('TWITTER_CONSUMER_SECRET', ''),
+        'ACCESS_TOKEN': os.environ.get('TWITTER_ACCESS_TOKEN', ''),
+        'ACCESS_SECRET': os.environ.get('TWITTER_ACCESS_SECRET', ''),
     })
 
 
 class ProductionConfig(Config):
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
     DEBUG = False
 
 
 class DockerDevConfig(Config):
-    SQLALCHEMY_DATABASE_URI = 'postgresql://testusr:password@postgres/testdb'
     DEBUG = True
 
 
