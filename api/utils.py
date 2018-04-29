@@ -1,4 +1,3 @@
-import json
 from flask import jsonify
 
 def create_response(data={}, status=200, message=''):

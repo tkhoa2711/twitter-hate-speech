@@ -1,3 +1,3 @@
-from . import mongo
+from api import mongo
 
 db = mongo.db

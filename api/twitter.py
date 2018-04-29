@@ -2,7 +2,7 @@ import logging
 import tweepy
 from api import app
 from flask import Blueprint
-from . import hatespeech
+from api import hatespeech
 
 log = logging.getLogger(__name__)
 
