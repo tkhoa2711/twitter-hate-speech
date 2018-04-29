@@ -30,10 +30,16 @@ class StreamListener(tweepy.StreamListener):
 
     def start(self):
         """Start or resume the streaming if it's been stopped before."""
-        pass
+        # TODO: set the stream parameters correctly
+        self.filter(
+            track=hatespeech.get_hate_word_list(),
+            # locations=[-122.75,36.8,-121.75,37.8,-74,40,-73,41], # San Francisco | New York
+            languages=['en'],
+            async=True)
 
     def stop(self):
         """Pause the streaming process."""
+        # TODO: implementation
         pass
 
     def on_connect(self):
@@ -71,13 +77,6 @@ def create_stream(config):
         config.TWITTER.ACCESS_SECRET)
     listener = StreamListener(api=tweepy.API(wait_on_rate_limit=True))
     stream = tweepy.Stream(auth=auth, listener=listener)
-
-    # TODO: set the stream parameters correctly
-    stream.filter(
-        track=hatespeech.get_hate_word_list(),
-        # locations=[-122.75,36.8,-121.75,37.8,-74,40,-73,41], # San Francisco | New York
-        languages=['en'],
-        async=True)
 
     # TODO: implement a mechanism to stop the stream on-demand
     # HINT: return false either in on_data() or on_status()
