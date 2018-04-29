@@ -1,5 +1,6 @@
 # Twitter Hate Speech
 [ ![Codeship Status for tkhoa2711/twitter-hate-speech](https://app.codeship.com/projects/b00347b0-2dc8-0136-973e-427f41bde3e6/status?branch=master)](https://app.codeship.com/projects/288157)
+
 This Boilerplate is meant for building out simple REST APIs deployed using Heroku and developed using Docker containers. This app is written in Python 3.6 with Postgres 10 as the chosen data persistance. You can deploy it with another service, like AWS, Google Cloud, and DigitalOcean with Gunicorn and Nginx, but instructions for that are not provided. Included are simple examples to help you get started. For development, the default way is to use Docker for ease of setup. However, there is documentation for setup without docker <a href='./docs/regular-setup.md'>here.</a> I've also written a <a href="https://medium.freecodecamp.org/docker-development-workflow-a-guide-with-flask-and-postgres-db1a1843044a">blog post</a> about using Docker based on this repository.<br> 
 
 ## Docs
@@ -34,6 +35,9 @@ And that's it! For Mac, you will see a Docker icon on the top bar, indicating th
 We have two Docker Images: 
 * ```app```: Our Flask Application
 * ```postgres```: Postgres Database<br>
+
+## System Requirements
+- Python 3.6 or later
 
 ## Setup
 First, clone the repo:
