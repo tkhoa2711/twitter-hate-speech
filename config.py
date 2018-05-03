@@ -1,8 +1,10 @@
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
-
-load_dotenv()
+# load environment variables
+env_path = Path('.') / '.env'
+load_dotenv(verbose=True, dotenv_path=str(env_path))
 
 
 # https://stackoverflow.com/questions/2352181/how-to-use-a-dot-to-access-members-of-dictionary
