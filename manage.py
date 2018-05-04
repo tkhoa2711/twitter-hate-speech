@@ -1,28 +1,36 @@
-from flask_script import Manager
-from flask_migrate import Migrate, MigrateCommand
+from config import config # NOTE: call this first to properly initialize all configs
 from api import app
 from api import twitter
+from flask_script import Manager
 
 
 manager = Manager(app)
 
-manager.add_command('db', MigrateCommand)
-
 
 @manager.command
-def runserver():
-    from config import config
+def dev():
+    """
+    Run the server in development mode.
+    """
     stream = twitter.create_stream(config)
+    stream.start()
     app.run(debug=True, host='0.0.0.0', port=5000)
+    stream.stop()
 
 
 @manager.command
-def runworker():
+def prod():
+    """
+    Run the server in production mode.
+    """
     app.run(debug=False)
 
 
 @manager.command
 def test():
+    """
+    Run all the tests.
+    """
     import unittest
 
     # TODO: refactor this part, have a proper environment for QA/testing
@@ -31,17 +39,6 @@ def test():
 
     tests = unittest.TestLoader().discover('tests', pattern="*test*.py")
     unittest.TextTestRunner(verbosity=2).run(tests)
-
-
-# @manager.command
-# def recreate_db():
-#     """
-#     Recreates a local database. You probably should not use this on
-#     production.
-#     """
-#     db.drop_all()
-#     db.create_all()
-#     db.session.commit()
 
 
 if __name__ == '__main__':
