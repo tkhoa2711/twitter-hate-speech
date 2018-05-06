@@ -1,13 +1,12 @@
+from bson import json_util
 import json
-import logging
 import tweepy
 from api import app
 from api.database import mongo
-from flask import Blueprint
+from flask import Blueprint, jsonify
 from api import hatespeech
 
-# log = app.logger
-log = logging.getLogger(__name__)
+log = app.logger
 
 mod = Blueprint('twitter', __name__)
 
@@ -19,7 +18,11 @@ mod = Blueprint('twitter', __name__)
 @app.route('/tweets')
 def tweets():
     """Return all tweets from database that has been processed."""
-    pass
+    result = mongo.db.result.find()
+    return jsonify(result=[
+        json.loads(json.dumps(item, indent=4, default=json_util.default))
+        for item in result
+    ])
 
 # ============================================================================
 # Functionality to work with Twitter
@@ -38,37 +41,22 @@ class StreamListener(tweepy.StreamListener):
         # TODO: should we do anything else
 
     def on_data(self, raw_data):
-        tweet = json.loads(raw_data)
-        log.info(tweet)
+        try:
+            tweet = json.loads(raw_data)
 
-        # save original tweet to database
-        with app.app_context():
-            mongo.db.tweet.insert(tweet)
+            # save original tweet to database
+            with app.app_context():
+                mongo.db.tweet.insert(tweet)
 
-        # TODO: extract data
-        # tweet = {
-        #     'id': data['id'],
-        #     'text': data['text'],
-        #     'user': {
-        #         'id': data['user']['id_str'], # use string format because the number representation is larger than 53 bits
-        #         'name': data['user']['name'],
-        #         # 'screen_name': data['user']['screen_name'],
-        #     },
-        #     # 'place': data['place'], # indicates that the tweet is associated (but not necessarily originating from) a place
-        #     'coordinates': data['coordinates'],
-        #     # 'timestamp_ms': data['timestamp_ms'], # TODO: which one to use?
-        #     'created_at': data['created_at'],
-        # }
+            self._preprocess(tweet)
 
-        # TODO: perform preproccessing
-        self._preprocess(tweet)
-
-        # TODO: save result to database
-        with app.app_context():
-            mongo.db.result.insert(tweet)
+            with app.app_context():
+                mongo.db.result.insert(tweet)
+        except Exception as e:
+            log.exception("Exception on processing tweet")
 
         # TODO: remove
-        return False
+        # return False
 
     def _preprocess(self, tweet):
         # TODO: implementation
@@ -81,6 +69,7 @@ class StreamListener(tweepy.StreamListener):
 
         detect_gender(tweet)
         detect_location(tweet)
+        analyse_sentiment(tweet)
 
 
 class Stream(tweepy.Stream):
@@ -93,9 +82,7 @@ class Stream(tweepy.Stream):
         log.info("Start listening for tweets data")
         # TODO: set the stream parameters correctly
         self.filter(
-            # track=hatespeech.get_hate_word_list(),
-            track=['hate', 'black'],
-            # locations=[-122.75,36.8,-121.75,37.8,-74,40,-73,41], # San Francisco | New York
+            track=hatespeech.get_hate_word_list(),
             languages=['en'],
             async=True)
 
@@ -134,7 +121,7 @@ def remove_punctuation(text):
     :param text:    the text input
     :return:        the text with punctuation removed
     """
-    if not remove_punctuation.translator:
+    if not hasattr(remove_punctuation, 'translator'):
         import string
         remove_punctuation.translator = str.maketrans('', '', string.punctuation)
 
@@ -148,7 +135,8 @@ def detect_gender(tweet):
     :return:        nothing, the tweet object will be updated inline
     """
     # TODO: implementation
-    pass
+    import random
+    tweet['user']['gender'] = random.choice(['M', 'F', 'NA'])
 
 
 def detect_location(tweet):
@@ -158,4 +146,27 @@ def detect_location(tweet):
     :return:        nothing, the tweet object will be updated inline
     """
     # TODO: implementation
-    pass
+    if not tweet.get('coordinates'):
+        log.info("Generate random coordinates for tweet %s", tweet['id'])
+        import random
+        lat = random.uniform(-180, 180)
+        long = random.uniform(-90, 90)
+        tweet['coordinates'] = {
+            'type': 'Point',
+            'coordinates': [
+                long,
+                lat,
+            ],
+            'generated': True,
+        }
+
+
+def analyse_sentiment(tweet):
+    """
+    Perform sentiment analysis of the tweet
+    :param tweet:   the tweet object
+    :return:        nothing, the tweet object will be updated inline
+    """
+    # TODO: implementation
+    import random
+    tweet['sentiment_level'] = random.randint(0, 5)
