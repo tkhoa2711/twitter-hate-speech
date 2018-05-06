@@ -19,6 +19,7 @@ class dotdict(dict):
 class Config:
     SECRET_KEY = 'testkey'
     MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/twitter')
+    PORT = os.environ.get('PORT', 5000)
 
 
 class DevelopmentConfig(Config):
