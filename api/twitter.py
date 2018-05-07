@@ -1,10 +1,9 @@
 from bson import json_util
 import json
 import tweepy
-from api import app
+from api import app, hatespeech, gender
 from api.database import mongo
 from flask import Blueprint, jsonify
-from api import hatespeech
 
 log = app.logger
 
@@ -67,7 +66,7 @@ class StreamListener(tweepy.StreamListener):
         words = text.split()
         tweet['text'] = words
 
-        detect_gender(tweet)
+        gender.detect_gender(tweet)
         detect_location(tweet)
         analyse_sentiment(tweet)
 
@@ -126,17 +125,6 @@ def remove_punctuation(text):
         remove_punctuation.translator = str.maketrans('', '', string.punctuation)
 
     return text.translate(remove_punctuation.translator)
-
-
-def detect_gender(tweet):
-    """
-    Detect the gender of the tweet's author.
-    :param tweet:   the tweet object
-    :return:        nothing, the tweet object will be updated inline
-    """
-    # TODO: implementation
-    import random
-    tweet['user']['gender'] = random.choice(['M', 'F', 'NA'])
 
 
 def detect_location(tweet):
