@@ -146,19 +146,7 @@ def detect_location(tweet):
     :return:        nothing, the tweet object will be updated inline
     """
     # TODO: implementation
-    if not tweet.get('coordinates'):
-        log.info("Generate random coordinates for tweet %s", tweet['id'])
-        import random
-        lat = random.uniform(-180, 180)
-        long = random.uniform(-90, 90)
-        tweet['coordinates'] = {
-            'type': 'Point',
-            'coordinates': [
-                long,
-                lat,
-            ],
-            'generated': True,
-        }
+    pass
 
 
 def analyse_sentiment(tweet):
