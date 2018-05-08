@@ -1,4 +1,4 @@
-from api.database import mongo
+from api.database import db
 from api.app import app
 from flask import Blueprint, jsonify
 
@@ -12,11 +12,17 @@ mod = Blueprint('hatespeech', __name__)
 @app.route('/hatewords')
 def get_hate_word_list():
     """Retrieve the list of hate words."""
-    return jsonify(result=list(i['word'] for i in mongo.db.hateword.find()))
+    import json
+    from bson import json_util
+    result = db.hateword.find()
+    return jsonify(result=[
+        json.loads(json.dumps(item, indent=4, default=json_util.default))
+        for item in result
+    ])
 
 
 @app.route('/hatewords', methods=['POST'])
 def set_hate_word_list(lst):
     """Set the hate word list."""
     # TODO: implementation
-    mongo.db.hateword.insert(lst)
+    pass
