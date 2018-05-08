@@ -1,6 +1,12 @@
+import logging
 from flask_pymongo import PyMongo
 from api.app import app
 
-# The MongoDB instance
-# NOTE: we can't directly use db = mongo.db due to Flask's application context
-mongo = PyMongo(app)
+try:
+    mongo = PyMongo(app)
+    db = None
+    with app.app_context():
+        db = mongo.db
+except Exception as e:
+    log = logging.getLogger(__name__)
+    log.exception(e)
