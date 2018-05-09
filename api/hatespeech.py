@@ -10,7 +10,7 @@ mod = Blueprint('hatespeech', __name__)
 # TODO: implementation
 
 @app.route('/hatewords')
-def get_hate_word_list():
+def _get_hate_word_list():
     """Retrieve the list of hate words."""
     import json
     from bson import json_util
@@ -22,7 +22,15 @@ def get_hate_word_list():
 
 
 @app.route('/hatewords', methods=['POST'])
-def set_hate_word_list(lst):
+def _set_hate_word_list(lst):
     """Set the hate word list."""
     # TODO: implementation
     pass
+
+
+# ============================================================================
+# Interface for other Python modules
+
+def get_hate_word_list():
+    """Retrieve the list of hate words."""
+    return list(i['word'] for i in db.hateword.find())
