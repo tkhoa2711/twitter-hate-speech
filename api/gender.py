@@ -1,11 +1,9 @@
 import re
-from api.app import app
+from api.logging import log
 from gender_predictor import GenderPredictor
 
 
 # ============================================================================
-
-log = app.logger
 
 # setup the gender predictor
 log.info("Setting up gender predictor")
