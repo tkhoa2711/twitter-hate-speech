@@ -1,11 +1,11 @@
 from bson import json_util
 import json
 import tweepy
-from api import app, hatespeech, gender
+from api import app, hatespeech, gender, logging
 from api.database import mongo
 from flask import Blueprint, jsonify
 
-log = app.logger
+log = logging.log
 
 mod = Blueprint('twitter', __name__)
 
@@ -39,9 +39,25 @@ class StreamListener(tweepy.StreamListener):
         # returning non-False reconnects the stream, with backoff
         # TODO: should we do anything else
 
+    def on_limit(self, track):
+        log.info(f"Tracking info: {track}")
+
     def on_data(self, raw_data):
         try:
-            tweet = json.loads(raw_data)
+            data = json.loads(raw_data)
+
+            # The data is not always a tweet but can also be a message from Twitter system itself
+            if 'limit' in data:
+                return self.on_limit(data)
+            elif 'text' not in data:
+                log.warn(f"Unknown message type: {data}")
+                # TODO: what to do with unknown message?
+                with app.app_context():
+                    mongo.db.unknown.insert(data)
+                return
+
+
+            tweet = data
 
             # save original tweet to database
             with app.app_context():
