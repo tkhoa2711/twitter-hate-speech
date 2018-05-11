@@ -15,11 +15,19 @@ def detect_location(tweet):
                 tweet['place']['city'] = tweet['place']['name']
                 tweet['place']['state'] = tweet['place']['full_name'].split(',')[1].strip()
             else:
-                # TODO: other countries have different formats to parse
-                pass
+                # NOTE: other countries have different formats to parse
+                # some have full_name as <city, state>, while others are <city, country>
+                # at the moment, we have to assume that the 2nd element of full_name is state
+                tweet['place']['city'] = tweet['place']['name']
+                tweet['place']['state'] = tweet['place']['full_name'].split(',')[1].strip()
         elif tweet['place']['place_type'] == 'admin':
-            state = tweet['place']['full_name'].split(',')[1].strip()
+            tweet['place']['city'] = None
+            tweet['place']['state'] = tweet['place']['name']
             # TODO: convert state name to state code
+        elif tweet['place']['place_type'] == 'country':
+            # only country info is available, nothing else we can do here
+            tweet['place']['city'] = None
+            tweet['place']['state'] = None
         else:
             log.warn(f"Not handling the place with unknown type: {tweet['place']}")
 
@@ -31,7 +39,7 @@ def detect_location(tweet):
                 'type': 'Point',
                 'coordinates': [avg_long, avg_lat],
             }
-        log.info(f"Detected location of tweet {tweet['id']} - coordinates: {tweet['coordinates']}\nplace: {tweet['place']}")
+        log.info(f"Detected location of tweet {tweet['id']} - coordinates: {tweet['coordinates']} - place: {tweet['place']}")
     elif tweet['coordinates']:
         log.info(f"Trying to detect location based on coordinates: {tweet['coordinates']}")
         long, lat = tweet['coordinates']['coordinates']
