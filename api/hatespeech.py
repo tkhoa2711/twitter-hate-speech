@@ -1,6 +1,6 @@
 from api.database import db
 from api.app import app
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 
 
 mod = Blueprint('hatespeech', __name__)
@@ -22,10 +22,27 @@ def _get_hate_word_list():
 
 
 @app.route('/hatewords', methods=['POST'])
-def _set_hate_word_list(lst):
-    """Set the hate word list."""
-    # TODO: implementation
-    pass
+def _set_hate_word():
+    """Add a new hate word to the list or update existing one."""
+    req = request.get_json()
+    db.hateword.replace_one({
+        'word': req['word']
+    },
+    {
+        'word': req['word'],
+        'category': req.get('category'),
+        'similar_to': req.get('similar_to'),
+    },
+    upsert=True)
+
+
+@app.route('/hatewords', methods=['DELETE'])
+def _delete_hate_word():
+    """Delete a hate word from the list."""
+    req = request.get_json()
+    db.hateword.delete_one({
+        'word': req['word']
+    })
 
 
 # ============================================================================
