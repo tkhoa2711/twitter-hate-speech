@@ -1,4 +1,5 @@
 from api.logging import log
+from statistics import mean
 
 
 def detect_location(tweet):
@@ -22,7 +23,15 @@ def detect_location(tweet):
         else:
             log.warn(f"Not handling the place with unknown type: {tweet['place']}")
 
-        log.info(f"Detected location of tweet {tweet['id']}: {tweet['place']}")
+        # If the exact location of the tweet is not available, try to produce an approximate coordinates
+        # by calculating the central point of the bounding box of the given place
+        if not tweet['coordinates']:
+            avg_long, avg_lat = [mean(lst) for lst in zip(*tweet['place']['bounding_box']['coordinates'][0])]
+            tweet['coordinates'] = {
+                'type': 'Point',
+                'coordinates': [avg_long, avg_lat],
+            }
+        log.info(f"Detected location of tweet {tweet['id']} - coordinates: {tweet['coordinates']}\nplace: {tweet['place']}")
     elif tweet['coordinates']:
         log.info(f"Trying to detect location based on coordinates: {tweet['coordinates']}")
         long, lat = tweet['coordinates']['coordinates']
