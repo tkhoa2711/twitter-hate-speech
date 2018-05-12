@@ -1,11 +1,12 @@
-from bson import json_util
 import json
+import pymongo
 import tweepy
-from api import app, hatespeech, gender, logging, location
+from api import app, hatespeech, gender, location
 from api.database import mongo
+from api.logging import log
+from bson import json_util
 from flask import Blueprint, jsonify, request
 
-log = logging.log
 
 mod = Blueprint('twitter', __name__)
 
@@ -23,7 +24,9 @@ def tweets():
     """
     limit = int(request.args.get('limit', 0))
 
-    result = mongo.db.result.find(limit=limit)
+    result = mongo.db.result.find()\
+        .sort('$natural', pymongo.DESCENDING)\
+        .limit(limit)
     return jsonify(result=[
         json.loads(json.dumps(item, indent=4, default=json_util.default))
         for item in result
