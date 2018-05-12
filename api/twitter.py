@@ -3,7 +3,7 @@ import json
 import tweepy
 from api import app, hatespeech, gender, logging, location
 from api.database import mongo
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 
 log = logging.log
 
@@ -16,8 +16,14 @@ mod = Blueprint('twitter', __name__)
 
 @app.route('/tweets')
 def tweets():
-    """Return all tweets from database that has been processed."""
-    result = mongo.db.result.find()
+    """
+    Return all tweets from database that has been processed.
+
+    :param limit:   limit the number of result to be returned
+    """
+    limit = int(request.args.get('limit', 0))
+
+    result = mongo.db.result.find(limit=limit)
     return jsonify(result=[
         json.loads(json.dumps(item, indent=4, default=json_util.default))
         for item in result
