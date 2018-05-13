@@ -1,7 +1,7 @@
 from api.database import db
 from api.app import app
 from api.logging import log
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, Response, jsonify, request
 
 
 mod = Blueprint('hatespeech', __name__)
@@ -26,32 +26,51 @@ def _get_hate_word_list():
 @app.route('/hatewords', methods=['POST'])
 def _set_hate_word():
     """Add a new hate word to the list or update existing one."""
-    req = request.get_json()
-    obj = {
-        'word': req['word'],
-        'category': req.get('category'),
-        'similar_to': req.get('similar_to'),
-    }
-    result = db.hateword.replace_one({
-        'word': req['word']
-    }, obj, upsert=True)
+    try:
+        req = request.get_json(force=True)
+        if not req:
+            return Response("Supplied data format is malformed", status=401)
 
-    if result.modified_count == 1:
-        log.info(f"Updated hate word [{req['word']}]: {obj}")
-    elif result.upserted_id is not None:
-        log.info(f"Added new hate word [{req['word']}]: {obj}")
+        obj = {
+            'word': req['word'],
+            'category': req.get('category'),
+            'similar_to': req.get('similar_to'),
+        }
+        result = db.hateword.replace_one({
+            'word': req['word']
+        }, obj, upsert=True)
+
+        if result.modified_count == 1:
+            log.info(f"Updated hate word [{req['word']}]: {obj}")
+            return ""
+        elif result.upserted_id is not None:
+            log.info(f"Added new hate word [{req['word']}]: {obj}")
+            return ""
+        else:
+            raise RuntimeError("Unknown error")
+    except Exception as e:
+        return Response(e, status=401)
 
 
 @app.route('/hatewords', methods=['DELETE'])
 def _delete_hate_word():
     """Delete a hate word from the list."""
-    req = request.get_json()
-    result = db.hateword.delete_one({
-        'word': req['word']
-    })
+    try:
+        req = request.get_json(force=True)
+        if not req:
+            return Response("Supplied data format is malformed", status=401)
 
-    if result.deleted_count == 1:
-        log.info(f"Deleted hate word [{req['word']}]")
+        result = db.hateword.delete_one({
+            'word': req['word']
+        })
+
+        if result.deleted_count == 1:
+            log.info(f"Deleted hate word [{req['word']}]")
+            return ""
+        else:
+            return Response(f"Unable to delete hate word [{req['word']}]", 401)
+    except Exception as e:
+        return Response(e, status=401)
 
 
 # ============================================================================
