@@ -5,7 +5,8 @@ from api import app, hatespeech, gender, location
 from api.database import mongo
 from api.logging import log
 from bson import json_util
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, Response, jsonify, request, \
+    copy_current_request_context, stream_with_context
 
 
 mod = Blueprint('twitter', __name__)
@@ -18,7 +19,7 @@ mod = Blueprint('twitter', __name__)
 @app.route('/tweets')
 def tweets():
     """
-    Return all tweets from database that has been processed.
+    Return tweets from database that has been processed from the latest one.
 
     :param limit:   limit the number of result to be returned
     """
@@ -31,6 +32,78 @@ def tweets():
         json.loads(json.dumps(item, indent=4, default=json_util.default))
         for item in result
     ])
+
+
+@app.route('/tweets/export')
+def export_tweets():
+    """
+    Export all results as CSV file from the latest tweet.
+
+    :param limit:   limit the number of result to be returned
+    """
+    @copy_current_request_context
+    def generate():
+        import io, csv
+        output = io.StringIO()
+        writer = csv.DictWriter(output, dialect='unix', fieldnames=[
+            "id",
+            "timestamp",
+            "text",
+            "hashtags",
+            # "reply_to",
+            # "mention",
+            "keywords",
+            "gender",
+            "longitude",
+            "latitude",
+            "city",
+            "state",
+            "country_code",
+            "sentiment_level",
+        ])
+
+        writer.writeheader()
+        output.seek(0)
+        yield output.read()
+        output.truncate(0)
+
+
+        # helper functions to retrieve coordinates
+        from api.utils import safe_get, safe_get_dict
+        get_long = lambda tweet: safe_get(safe_get_dict(tweet, ['coordinates', 'coordinates'] ,default=[]), 0, '')
+        get_lat = lambda tweet: safe_get(safe_get_dict(tweet, ['coordinates', 'coordinates'] ,default=[]), 1, '')
+
+        # the number of result to get
+        limit = int(request.args.get('limit', 0))
+
+        for tweet in mongo.db.result.find()\
+                .sort('$natural', pymongo.DESCENDING)\
+                .limit(limit):
+            writer.writerow({
+                'id': tweet['id'],
+                'timestamp': tweet['created_at'],
+                'text': tweet['text'],
+                'hashtags': tweet['entities'].get('hashtags', ''),
+                # # reply to
+                # # mention
+                'keywords': tweet.get('keywords', ''),
+                'gender': tweet.get('gender', ''),
+                'longitude': get_long(tweet),
+                'latitude': get_lat(tweet),
+                'city': safe_get_dict(tweet, ['place', 'city'], ''),
+                'state': safe_get_dict(tweet, ['place', 'state'], ''),
+                'country_code': safe_get_dict(tweet, ['place', 'country_code'], ''),
+                'sentiment_level': tweet.get('sentiment_level', ''),
+            })
+            output.seek(0)
+            yield output.read()
+            output.truncate(0)
+
+    response = Response(stream_with_context(generate()),
+                        mimetype='text/csv')
+    response.headers['Content-Disposition'] = 'attachment; filename=result.csv'
+    return response
+
 
 # ============================================================================
 # Functionality to work with Twitter
