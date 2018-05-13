@@ -41,5 +41,30 @@ def test():
     unittest.TextTestRunner(verbosity=2).run(tests)
 
 
+@manager.command
+def recreate_db():
+    """
+    Recreate the database.
+    """
+    import pymongo
+    from api.database import db
+    from script import script
+
+    # table for storing categories of hate words
+    db.category.drop()
+    db.category.create_index()
+
+    # table for storing hate words
+    db.hateword.drop()
+    db.hateword.create_index([('word', pymongo.ASCENDING)], unique=True)
+    script.populate_hateword_data()
+
+    # table for storing tweets
+    db.tweet.drop()
+
+    # table for storing processed tweets
+    db.result.drop()
+
+
 if __name__ == '__main__':
     manager.run()
