@@ -52,7 +52,6 @@ def recreate_db():
 
     # table for storing categories of hate words
     db.category.drop()
-    db.category.create_index()
 
     # table for storing hate words
     db.hateword.drop()
