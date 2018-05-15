@@ -9,3 +9,6 @@ app.register_blueprint(twitter.mod)
 
 from api import hatespeech
 app.register_blueprint(hatespeech.mod)
+
+from api import testing
+app.register_blueprint(testing.mod)
