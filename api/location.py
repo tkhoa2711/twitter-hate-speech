@@ -38,9 +38,10 @@ def detect_location(tweet):
             tweet['coordinates'] = {
                 'type': 'Point',
                 'coordinates': [avg_long, avg_lat],
+                'generated': True,
             }
         log.info(f"Detected location of tweet {tweet['id']} - coordinates: {tweet['coordinates']} - place: {tweet['place']}")
     elif tweet['coordinates']:
-        log.info(f"Trying to detect location based on coordinates: {tweet['coordinates']}")
+        log.info(f"Received tweet with coordinates: {tweet['coordinates']}")
         long, lat = tweet['coordinates']['coordinates']
         # TODO: reverse geocoding

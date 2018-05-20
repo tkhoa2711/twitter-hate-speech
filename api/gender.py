@@ -37,7 +37,7 @@ def detect_gender(tweet):
         pass
 
     tweet['user']['gender'] = gender
-    log.debug(f'Name: {orig_name} - First name: {first_name} - Gender: {gender}')
+    log.debug(f"Tweet[{tweet['id']}] Name: {orig_name} - First name: {first_name} - Gender: {gender}")
 
 
 def extract_first_name(name):
@@ -55,4 +55,4 @@ def extract_first_name(name):
         first_name = name.split(' ', 1)[0]
         return first_name
     except Exception:
-        raise Exception(f'Unable to extract first name from [{name}]')
+        raise Exception(f"Tweet[{tweet['id']}]Unable to extract first name from [{name}]")

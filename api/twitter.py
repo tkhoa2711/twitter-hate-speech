@@ -67,7 +67,6 @@ def export_tweets():
         yield output.read()
         output.truncate(0)
 
-
         # helper functions to retrieve coordinates
         from api.utils import safe_get, safe_get_dict
         get_long = lambda tweet: safe_get(safe_get_dict(tweet, ['coordinates', 'coordinates'] ,default=[]), 0, '')
@@ -81,12 +80,12 @@ def export_tweets():
                 .limit(limit):
             writer.writerow({
                 'id': tweet['id'],
-                'timestamp': tweet['created_at'],
+                'timestamp': tweet['timestamp'],
                 'text': tweet['text'],
-                'hashtags': tweet['entities'].get('hashtags', ''),
-                # # reply to
-                # # mention
-                'keywords': tweet.get('keywords', ''),
+                'hashtags': ','.join(tweet['entities'].get('hashtags', [])),
+                # reply to
+                # mention
+                'keywords': ','.join(tweet.get('keywords', [])),
                 'gender': tweet.get('gender', ''),
                 'longitude': get_long(tweet),
                 'latitude': get_lat(tweet),
@@ -138,14 +137,7 @@ class StreamListener(tweepy.StreamListener):
                     mongo.db.unknown.insert(data)
                 return
 
-
-            tweet = data
-
-            # save original tweet to database
-            with app.app_context():
-                mongo.db.tweet.insert(tweet)
-
-            self._preprocess(tweet)
+            tweet = self._preprocess(data)
 
             with app.app_context():
                 mongo.db.result.insert(tweet)
@@ -156,17 +148,51 @@ class StreamListener(tweepy.StreamListener):
         # return False
 
     def _preprocess(self, tweet):
-        # TODO: implementation
-        text = tweet['text']
+        # text = tweet['text']
+        #
+        # text = text.lower()
+        # text = remove_punctuation(text)
+        # words = text.split()
 
-        text = text.lower()
-        text = remove_punctuation(text)
-        words = text.split()
-        tweet['text'] = words
+        if tweet['truncated']:
+            full_text = tweet['extended_tweet']['full_text']
+            tweet['text'] = full_text
+
+        hash_tags = [i['text'] for i in tweet['entities'].get('hashtags', [])]
+        user_mentions = [{
+            'screen_name': i['screen_name'],
+            'name': i['name'],
+            'id': i['id_str'],
+        } for i in tweet['entities'].get('user_mentions', [])]
 
         gender.detect_gender(tweet)
         location.detect_location(tweet)
         analyse_sentiment(tweet)
+
+        return {
+            'id': tweet['id_str'],
+            'user': {
+                'id': tweet['user']['id_str'],
+                'name': tweet['user']['name'],
+                'screen_name': tweet['user']['screen_name'],
+            },
+            'timestamp': tweet['created_at'],
+            'timestamp_ms': tweet['timestamp_ms'],
+            'text': tweet['text'],
+            'coordinates': tweet.get('coordinates'),
+            'place': {
+                'city': tweet.get('city'),
+                'state': tweet.get('state'),
+                'country_code': tweet.get('country_code'),
+            },
+            'gender': tweet.get('gender'),
+            'keywords': None, # TODO
+            'reply_to': None, # TODO
+            'entities': {
+                'hashtags': hash_tags,
+                'user_mentions': user_mentions,
+            },
+        }
 
 
 class Stream(tweepy.Stream):
