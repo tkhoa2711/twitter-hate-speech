@@ -14,7 +14,7 @@ def dev():
     """
     stream = twitter.create_stream(config)
     stream.start()
-    app.run(debug=True, host='0.0.0.0', port=config.PORT, use_reloader=False)
+    app.run(debug=True, host='0.0.0.0', port=config.PORT, use_reloader=False, threaded=True)
     stream.stop()
 
 
