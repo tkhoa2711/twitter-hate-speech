@@ -4,6 +4,7 @@ import tweepy
 from api import app, hatespeech, gender, location
 from api.database import mongo
 from api.logging import log
+from api.utils import safe_get, safe_get_dict
 from bson import json_util
 from flask import Blueprint, Response, jsonify, request, \
     copy_current_request_context, stream_with_context
@@ -68,7 +69,6 @@ def export_tweets():
         output.truncate(0)
 
         # helper functions to retrieve coordinates
-        from api.utils import safe_get, safe_get_dict
         get_long = lambda tweet: safe_get(safe_get_dict(tweet, ['coordinates', 'coordinates'] ,default=[]), 0, '')
         get_lat = lambda tweet: safe_get(safe_get_dict(tweet, ['coordinates', 'coordinates'] ,default=[]), 1, '')
 
@@ -175,17 +175,17 @@ class StreamListener(tweepy.StreamListener):
                 'id': tweet['user']['id_str'],
                 'name': tweet['user']['name'],
                 'screen_name': tweet['user']['screen_name'],
+                'gender':tweet['user']['gender'],
             },
             'timestamp': tweet['created_at'],
             'timestamp_ms': tweet['timestamp_ms'],
             'text': tweet['text'],
             'coordinates': tweet.get('coordinates'),
             'place': {
-                'city': tweet.get('city'),
-                'state': tweet.get('state'),
-                'country_code': tweet.get('country_code'),
+                'city': safe_get_dict(tweet, ['place', 'city']),
+                'state': safe_get_dict(tweet, ['place', 'state']),
+                'country_code': safe_get_dict(tweet, ['place', 'country_code']),
             },
-            'gender': tweet.get('gender'),
             'keywords': None, # TODO
             'reply_to': None, # TODO
             'entities': {
