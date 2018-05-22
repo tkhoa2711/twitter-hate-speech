@@ -13,9 +13,10 @@ def dev():
     Run the server in development mode.
     """
     stream = twitter.create_stream(config)
-    stream.start()
+    app.twitter_stream = stream
+    app.twitter_stream.start()
     app.run(debug=True, host='0.0.0.0', port=config.PORT, use_reloader=False, threaded=True)
-    stream.stop()
+    app.twitter_stream.stop()
 
 
 @manager.command
