@@ -5,8 +5,8 @@ class BasicTestCase(unittest.TestCase):
 
     def setUp(self):
         # create a test client of the app
-        import api
-        self.app = api.app.test_client()
+        import hatespeech.api
+        self.app = hatespeech.api.app.test_client()
 
         # propagate the exceptions to the test client
         self.app.testing = True

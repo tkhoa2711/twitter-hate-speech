@@ -1,4 +1,4 @@
-from config import config
+from hatespeech.config import config
 
 
 def populate_hateword_data():

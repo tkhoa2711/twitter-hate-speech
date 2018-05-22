@@ -1,6 +1,6 @@
 import json
 import unittest
-from api.database import db
+from hatespeech.api.database import db
 
 
 class HateSpeechTest(unittest.TestCase):
@@ -8,7 +8,7 @@ class HateSpeechTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         try:
-            from api.app import app
+            from hatespeech.api.app import app
             cls.app = app.test_client()
         except Exception as e:
             raise unittest.SkipTest(e)
@@ -26,7 +26,7 @@ class HateSpeechTest(unittest.TestCase):
 
     def tearDown(self):
         # clear test data
-        db.hateword.remove({})
+        db.hateword.delete_many({})
 
     def test_get_new_hateword(self):
         res = self.app.get('/hatewords')

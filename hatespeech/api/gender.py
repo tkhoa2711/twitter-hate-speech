@@ -1,5 +1,5 @@
 import re
-from api.logging2 import log
+from hatespeech.api.logging2 import log
 from gender_predictor import GenderPredictor
 
 

@@ -1,7 +1,7 @@
 import logging
 from flask import logging as flask_logging
-from api.app import app
-from config import config
+from hatespeech.api.app import app
+from hatespeech.config import config
 
 flask_logging.DEBUG_LOG_FORMAT = (
     '[%(asctime)s] %(levelname)s %(filename)s.%(funcName)s [%(pathname)s:%(lineno)d] [%(thread)d]:\n' +

@@ -7,7 +7,7 @@ class DatabaseTestCase(unittest.TestCase):
 
     @mock.patch("flask_pymongo.PyMongo")
     def test_connection(self, mock_mongoclient):
-        from api import database
+        from hatespeech.api import database
         db = database.mongo.db
         print(db)
         assert db is not None

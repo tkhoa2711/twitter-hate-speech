@@ -1,4 +1,4 @@
-from api.logging2 import log
+from hatespeech.api.logging2 import log
 from statistics import mean
 
 

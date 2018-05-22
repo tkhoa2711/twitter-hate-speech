@@ -1,6 +1,6 @@
-from api.database import db
-from api.app import app
-from api.logging2 import log
+from hatespeech.api.database import db
+from hatespeech.api.app import app
+from hatespeech.api.logging2 import log
 from flask import Blueprint, Response, jsonify, request
 
 mod = Blueprint('testing', __name__)

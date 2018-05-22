@@ -1,6 +1,6 @@
-from config import config # NOTE: call this first to properly initialize all configs
-from api import app
-from api import twitter
+from hatespeech.config import config # NOTE: call this first to properly initialize all configs
+from hatespeech.api import app
+from hatespeech.api import twitter
 from flask_script import Manager
 
 
@@ -47,23 +47,8 @@ def recreate_db():
     """
     Recreate the database.
     """
-    import pymongo
-    from api.database import db
-    from script import script
-
-    # table for storing categories of hate words
-    db.category.drop()
-
-    # table for storing hate words
-    db.hateword.drop()
-    db.hateword.create_index([('word', pymongo.ASCENDING)], unique=True)
-    script.populate_hateword_data()
-
-    # table for storing tweets
-    db.tweet.drop()
-
-    # table for storing processed tweets
-    db.result.drop()
+    from hatespeech.api.database import recreate_db
+    recreate_db()
 
 
 if __name__ == '__main__':
