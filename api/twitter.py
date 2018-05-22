@@ -6,6 +6,7 @@ from api.database import mongo
 from api.logging2 import log
 from api.utils import safe_get, safe_get_dict
 from bson import json_util
+from datetime import datetime
 from flask import Blueprint, Response, jsonify, request, \
     copy_current_request_context, stream_with_context
 
@@ -104,6 +105,35 @@ def export_tweets():
     return response
 
 
+@app.route('/tweets/filter/date', methods=['POST'])
+def filter_tweets_by_date():
+    """
+    Retrieve tweets by start and end dates.
+    """
+    req = request.get_json(force=True)
+    start_date = req.get('start_date')
+    end_date = req.get('end_date')
+
+    try:
+        # ensure that the specified time is in UTC +0000
+        date_format = '%d/%m/%Y %z'
+        start_date = datetime.strptime(start_date + " +0000", date_format).timestamp() * 1000
+        end_date = datetime.strptime(end_date + " +0000", date_format).timestamp() * 1000
+
+        if start_date >= end_date:
+            raise Exception("End date is equal to or earlier than start date")
+    except Exception:
+        log.exception("Date(s) are invalid")
+        return Response("Date(s) are invalid", status=401)
+
+    result = mongo.db.result.find({'timestamp_ms': {'$gte': start_date, '$lt': end_date}})
+
+    return jsonify(result=[
+        json.loads(json.dumps(item, indent=4, default=json_util.default))
+        for item in result
+    ])
+
+
 # ============================================================================
 # Functionality to work with Twitter
 
@@ -178,7 +208,7 @@ class StreamListener(tweepy.StreamListener):
                 'gender':tweet['user']['gender'],
             },
             'timestamp': tweet['created_at'],
-            'timestamp_ms': tweet['timestamp_ms'],
+            'timestamp_ms': int(tweet['timestamp_ms']),
             'text': tweet['text'],
             'coordinates': tweet.get('coordinates'),
             'place': {
