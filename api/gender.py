@@ -1,5 +1,5 @@
 import re
-from api.logging import log
+from api.logging2 import log
 from gender_predictor import GenderPredictor
 
 

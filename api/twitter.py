@@ -3,7 +3,7 @@ import pymongo
 import tweepy
 from api import app, hatespeech, gender, location
 from api.database import mongo
-from api.logging import log
+from api.logging2 import log
 from api.utils import safe_get, safe_get_dict
 from bson import json_util
 from flask import Blueprint, Response, jsonify, request, \

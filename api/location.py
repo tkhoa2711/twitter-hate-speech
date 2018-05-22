@@ -1,4 +1,4 @@
-from api.logging import log
+from api.logging2 import log
 from statistics import mean
 
 
