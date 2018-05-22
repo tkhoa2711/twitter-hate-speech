@@ -1,9 +1,6 @@
 from hatespeech.api.app import app
 
 # import and register blueprints
-from hatespeech.api.views import main
-app.register_blueprint(main.mod)
-
 from hatespeech.api import twitter
 app.register_blueprint(twitter.mod)
 
