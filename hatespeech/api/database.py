@@ -33,6 +33,7 @@ def recreate_db():
 
     # table for storing processed tweets
     db.result.drop()
+    db.result.create_index([('id', pymongo.ASCENDING)], unique=True)
 
     import http
     return '', http.HTTPStatus.NO_CONTENT
