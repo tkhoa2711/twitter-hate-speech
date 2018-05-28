@@ -1,10 +1,12 @@
+import functools
 import json
 import pymongo
 import tweepy
-from api import app, hatespeech, gender, location
-from api.database import mongo
-from api.logging2 import log
-from api.utils import safe_get, safe_get_dict
+from hatespeech.api import app, hatespeech, gender, location
+from hatespeech.api.database import mongo
+from hatespeech.api.logging2 import log
+from hatespeech.api.utils import safe_get, safe_get_dict
+from hatespeech.config import config
 from bson import json_util
 from datetime import datetime
 from flask import Blueprint, Response, jsonify, request, \
@@ -134,6 +136,24 @@ def filter_tweets_by_date():
     ])
 
 
+@app.route('/tweets/search', methods=['POST'])
+def search_tweets():
+    # TODO: implementation
+    req = request.get_json(force=True)
+    keyword = req.get('keyword')
+    limit = int(req.get('limit', 1000))
+
+    if not keyword:
+        return Response("Keyword is not specified", 401)
+
+    api = _get_api()
+    result = (_preprocess(tweet._json) for tweet in tweepy.Cursor(api.search, q=keyword, count=limit).items(limit))
+    return jsonify(result=[
+        json.loads(json.dumps(item, indent=4, default=json_util.default))
+        for item in result
+    ])
+
+
 # ============================================================================
 # Functionality to work with Twitter
 
@@ -167,7 +187,7 @@ class StreamListener(tweepy.StreamListener):
                     mongo.db.unknown.insert(data)
                 return
 
-            tweet = self._preprocess(data)
+            tweet = _preprocess(data)
 
             with app.app_context():
                 mongo.db.result.insert(tweet)
@@ -177,16 +197,97 @@ class StreamListener(tweepy.StreamListener):
         # TODO: remove
         # return False
 
-    def _preprocess(self, tweet):
-        # text = tweet['text']
-        #
-        # text = text.lower()
-        # text = remove_punctuation(text)
-        # words = text.split()
 
-        if tweet['truncated']:
+class Stream(tweepy.Stream):
+
+    def __init__(self, auth, listener, **options):
+        super().__init__(auth, listener, **options)
+
+    def start(self):
+        """Start or resume the streaming if it's been stopped before."""
+        log.info("Start listening for tweets data")
+        # TODO: set the stream parameters correctly
+        self.filter(
+            track=hatespeech.get_hate_word_list(),
+            languages=['en'],
+            async=True)
+
+    def stop(self):
+        """Pause the streaming process."""
+        log.info("Stopping the stream")
+        # NOTE: this will stop after the next tweet arrives
+        self.running = False
+
+
+def _get_api():
+    """
+    Return the Twitter's API object.
+    """
+    auth = tweepy.OAuthHandler(
+        consumer_key=config.TWITTER.CONSUMER_KEY,
+        consumer_secret=config.TWITTER.CONSUMER_SECRET)
+    auth.set_access_token(
+        config.TWITTER.ACCESS_TOKEN,
+        config.TWITTER.ACCESS_SECRET)
+    api = tweepy.API(auth_handler=auth, wait_on_rate_limit=True)
+    return api
+
+
+def create_stream():
+    """
+    Create a stream that listens for tweets from Twitter.
+    """
+    api = _get_api()
+    listener = StreamListener(api=api)
+    stream = Stream(auth=api.auth, listener=listener)
+
+    # TODO: implement a mechanism to stop the stream on-demand
+    # HINT: return false either in on_data() or on_status()
+
+    return stream
+
+# ============================================================================
+# Helper function
+
+
+def remove_punctuation(text):
+    """
+    Remove punctuation from a text.
+    :param text:    the text input
+    :return:        the text with punctuation removed
+    """
+    if not hasattr(remove_punctuation, 'translator'):
+        import string
+        remove_punctuation.translator = str.maketrans('', '', string.punctuation)
+
+    return text.translate(remove_punctuation.translator)
+
+
+def analyse_sentiment(tweet):
+    """
+    Perform sentiment analysis of the tweet
+    :param tweet:   the tweet object
+    :return:        nothing, the tweet object will be updated inline
+    """
+    # TODO: implementation
+    import random
+    tweet['sentiment_level'] = random.randint(0, 5)
+
+
+def _preprocess(tweet):
+    """
+    Perform pre-processing of tweet data.
+    :param tweet:   the tweet object
+    :return:        a new tweet object
+    """
+    try:
+        if tweet.get('truncated') and tweet.get('extended_tweet'):
             full_text = tweet['extended_tweet']['full_text']
             tweet['text'] = full_text
+
+        if not tweet.get('timestamp_ms'):
+            datetime_format = '%a %b %d %H:%M:%S %z %Y'
+            tweet['timestamp_ms'] = datetime.strptime(tweet['created_at'], datetime_format).timestamp() * 1000
 
         hash_tags = [i['text'] for i in tweet['entities'].get('hashtags', [])]
         user_mentions = [{
@@ -223,70 +324,5 @@ class StreamListener(tweepy.StreamListener):
                 'user_mentions': user_mentions,
             },
         }
-
-
-class Stream(tweepy.Stream):
-
-    def __init__(self, auth, listener, **options):
-        super().__init__(auth, listener, **options)
-
-    def start(self):
-        """Start or resume the streaming if it's been stopped before."""
-        log.info("Start listening for tweets data")
-        # TODO: set the stream parameters correctly
-        self.filter(
-            track=hatespeech.get_hate_word_list(),
-            languages=['en'],
-            async=True)
-
-    def stop(self):
-        """Pause the streaming process."""
-        log.info("Stopping the stream")
-        # NOTE: this will stop after the next tweet arrives
-        self.running = False
-
-
-def create_stream(config):
-    """
-    Create a stream that listens for tweets from Twitter.
-    """
-    auth = tweepy.OAuthHandler(
-        consumer_key=config.TWITTER.CONSUMER_KEY,
-        consumer_secret=config.TWITTER.CONSUMER_SECRET)
-    auth.set_access_token(
-        config.TWITTER.ACCESS_TOKEN,
-        config.TWITTER.ACCESS_SECRET)
-    listener = StreamListener(api=tweepy.API(wait_on_rate_limit=True))
-    stream = Stream(auth=auth, listener=listener)
-
-    # TODO: implement a mechanism to stop the stream on-demand
-    # HINT: return false either in on_data() or on_status()
-
-    return stream
-
-# ============================================================================
-# Helper function
-
-
-def remove_punctuation(text):
-    """
-    Remove punctuation from a text.
-    :param text:    the text input
-    :return:        the text with punctuation removed
-    """
-    if not hasattr(remove_punctuation, 'translator'):
-        import string
-        remove_punctuation.translator = str.maketrans('', '', string.punctuation)
-
-    return text.translate(remove_punctuation.translator)
-
-
-def analyse_sentiment(tweet):
-    """
-    Perform sentiment analysis of the tweet
-    :param tweet:   the tweet object
-    :return:        nothing, the tweet object will be updated inline
-    """
-    # TODO: implementation
-    import random
-    tweet['sentiment_level'] = random.randint(0, 5)
+    except Exception as e:
+        log.exception(f"Error during processing tweet [${tweet['id']}]")
