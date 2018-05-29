@@ -16,4 +16,4 @@ class BasicTestCase(unittest.TestCase):
 
     def test_index(self):
         r = self.app.get('/')
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.status_code, 404)

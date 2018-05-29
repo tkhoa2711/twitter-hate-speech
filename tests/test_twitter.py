@@ -9,7 +9,7 @@ class TwitterTest(unittest.TestCase):
     def setUpClass(cls):
         try:
             from hatespeech.config import config
-            cls.stream = twitter.create_stream(config)
+            cls.stream = twitter.create_stream()
         except Exception as e:
             raise unittest.SkipTest(e)
 

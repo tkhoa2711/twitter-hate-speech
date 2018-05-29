@@ -30,7 +30,7 @@ def _set_hate_word():
     try:
         req = request.get_json(force=True)
         if not req:
-            return Response("Supplied data format is malformed", status=401)
+            return Response("Supplied data format is malformed", status=400)
 
         obj = {
             'word': req['word'],
@@ -50,7 +50,7 @@ def _set_hate_word():
         else:
             raise RuntimeError("Unknown error")
     except Exception as e:
-        return Response(e, status=401)
+        return Response(e, status=500)
 
 
 @app.route('/hatewords', methods=['DELETE'])
@@ -59,7 +59,7 @@ def _delete_hate_word():
     try:
         req = request.get_json(force=True)
         if not req:
-            return Response("Supplied data format is malformed", status=401)
+            return Response("Supplied data format is malformed", status=400)
 
         result = db.hateword.delete_one({
             'word': req['word']
@@ -69,9 +69,9 @@ def _delete_hate_word():
             log.info(f"Deleted hate word [{req['word']}]")
             return ""
         else:
-            return Response(f"Unable to delete hate word [{req['word']}]", 401)
+            return Response(f"Unable to delete hate word [{req['word']}]", 400)
     except Exception as e:
-        return Response(e, status=401)
+        return Response(e, status=500)
 
 
 # ============================================================================

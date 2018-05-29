@@ -18,7 +18,7 @@ def setup():
         db.hateword.insert(_TEST_DATA)
         return ''
     except Exception as e:
-        return Response(e, status=401)
+        return Response(e, status=400)
 
 
 @app.route('/testing/teardown')
@@ -27,4 +27,4 @@ def teardown():
         db.hateword.delete_many({})
         return ''
     except Exception as e:
-        return Response(e, status=401)
+        return Response(e, status=400)

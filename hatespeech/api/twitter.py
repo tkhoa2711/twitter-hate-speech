@@ -2,7 +2,7 @@ import functools
 import json
 import pymongo
 import tweepy
-from hatespeech.api import app, hatespeech, gender, location
+from hatespeech.api import app, hateword, gender, location
 from hatespeech.api.database import mongo
 from hatespeech.api.logging2 import log
 from hatespeech.api.utils import safe_get, safe_get_dict
@@ -126,7 +126,7 @@ def filter_tweets_by_date():
             raise Exception("End date is equal to or earlier than start date")
     except Exception:
         log.exception("Date(s) are invalid")
-        return Response("Date(s) are invalid", status=401)
+        return Response("Date(s) are invalid", status=400)
 
     result = mongo.db.result.find({'timestamp_ms': {'$gte': start_date, '$lt': end_date}})
 
@@ -144,7 +144,7 @@ def search_tweets():
     limit = int(req.get('limit', 1000))
 
     if not keyword:
-        return Response("Keyword is not specified", 401)
+        return Response("Keyword is not specified", 400)
 
     api = _get_api()
     result = (_preprocess(tweet._json) for tweet in tweepy.Cursor(api.search, q=keyword, count=limit).items(limit))
@@ -208,7 +208,7 @@ class Stream(tweepy.Stream):
         log.info("Start listening for tweets data")
         # TODO: set the stream parameters correctly
         self.filter(
-            track=hatespeech.get_hate_word_list(),
+            track=hateword.get_hate_word_list(),
             languages=['en'],
             async=True)
 
