@@ -1,5 +1,6 @@
 from hatespeech.api.database import db
 from hatespeech.api.app import app
+from hatespeech.api.auth import authorize
 from hatespeech.api.logging2 import log
 from flask import Blueprint, Response, jsonify, request
 
@@ -9,7 +10,6 @@ mod = Blueprint('hateword', __name__)
 
 # ============================================================================
 # API for managing and using tweet data
-# TODO: implementation
 
 @app.route('/hatewords')
 def _get_hate_word_list():
@@ -25,6 +25,7 @@ def _get_hate_word_list():
 
 
 @app.route('/hatewords', methods=['POST'])
+@authorize
 def _set_hate_word():
     """Add a new hate word to the list or update existing one."""
     try:
@@ -69,6 +70,7 @@ def _set_hate_word():
 
 
 @app.route('/hatewords', methods=['DELETE'])
+@authorize
 def _delete_hate_word():
     """Delete a hate word from the list."""
     try:
