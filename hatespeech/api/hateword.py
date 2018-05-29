@@ -32,20 +32,35 @@ def _set_hate_word():
         if not req:
             return Response("Supplied data format is malformed", status=400)
 
+        hateword = _normalize(req['word'])
+        categories = [_normalize(i) for i in req.get('category', [])]
+        similar_words = [_normalize(i) for i in req.get('similar_to', [])]
+
         obj = {
-            'word': req['word'],
-            'category': req.get('category'),
-            'similar_to': req.get('similar_to'),
+            'word': hateword,
+            'category': categories,
+            'similar_to': similar_words,
         }
+
+        # add/update the word in db
         result = db.hateword.replace_one({
-            'word': req['word']
+            'word': hateword
         }, obj, upsert=True)
 
+        # add new categories if there are any
+        for cate in categories:
+            db.category.update_one({
+                'name': cate
+            }, {
+                '$setOnInsert': {'name': cate}
+            }, upsert=True)
+
+        # check result
         if result.modified_count == 1:
-            log.info(f"Updated hate word [{req['word']}]: {obj}")
+            log.info(f"Updated hate word [{hateword}]: {obj}")
             return ""
         elif result.upserted_id is not None:
-            log.info(f"Added new hate word [{req['word']}]: {obj}")
+            log.info(f"Added new hate word [{hateword}]: {obj}")
             return ""
         else:
             raise RuntimeError("Unknown error")
@@ -80,3 +95,8 @@ def _delete_hate_word():
 def get_hate_word_list():
     """Retrieve the list of hate words."""
     return list(i['word'] for i in db.hateword.find())
+
+
+def _normalize(word):
+    word = word.lower()
+    return word
