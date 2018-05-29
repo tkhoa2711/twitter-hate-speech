@@ -10,6 +10,7 @@ class HateWordTest(unittest.TestCase):
         try:
             from hatespeech.api.app import app
             cls.app = app.test_client()
+            db.client.server_info()
         except Exception as e:
             raise unittest.SkipTest(e)
 
@@ -78,6 +79,7 @@ class HateWordCategoryTest(unittest.TestCase):
         try:
             from hatespeech.api.app import app
             cls.app = app.test_client()
+            db.client.server_info()
         except Exception as e:
             raise unittest.SkipTest(e)
 
