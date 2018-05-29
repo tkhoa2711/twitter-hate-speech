@@ -38,6 +38,11 @@ def recreate_db():
     db.result.drop()
     db.result.create_index([('id', pymongo.ASCENDING)], unique=True)
 
+    # table for storing user info
+    db.user.drop()
+    db.user.create_index([('username', pymongo.ASCENDING)], unique=True)
+    script.populate_user_data()
+
     return '', http.HTTPStatus.NO_CONTENT
 
 
