@@ -1,4 +1,6 @@
+import http
 import logging
+from datetime import datetime
 from flask_pymongo import PyMongo
 from hatespeech.api.app import app
 
@@ -36,5 +38,19 @@ def recreate_db():
     db.result.drop()
     db.result.create_index([('id', pymongo.ASCENDING)], unique=True)
 
-    import http
+    return '', http.HTTPStatus.NO_CONTENT
+
+
+@app.route('/db/clean')
+def clean_old_data(days=7):
+    """
+    Clean tweet data that is older than 7 days (by default).
+    """
+    now = int(datetime.now().timestamp() * 1000)
+    date_range = days * 86400 * 1000
+    date_threshold = now - date_range
+
+    result = db.result.delete_many({'timestamp_ms': {'$lt': date_threshold}})
+
+    log.info(f"Deleted {result.deleted_count} tweet records")
     return '', http.HTTPStatus.NO_CONTENT

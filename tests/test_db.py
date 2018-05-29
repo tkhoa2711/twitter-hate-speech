@@ -1,13 +1,14 @@
 import unittest
-import flask_pymongo
-from unittest import mock
+from hatespeech.api.database import db
 
 
 class DatabaseTestCase(unittest.TestCase):
 
-    @mock.patch("flask_pymongo.PyMongo")
-    def test_connection(self, mock_mongoclient):
-        from hatespeech.api import database
-        db = database.mongo.db
-        print(db)
-        assert db is not None
+    @classmethod
+    def setUpClass(cls):
+        try:
+            from hatespeech.api.app import app
+            cls.app = app.test_client()
+            db.client.server_info()
+        except Exception as e:
+            raise unittest.SkipTest(e)
