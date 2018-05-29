@@ -4,7 +4,8 @@ from hatespeech.api.logging2 import log
 from flask import Blueprint, Response, jsonify, request
 
 
-mod = Blueprint('hatespeech', __name__)
+mod = Blueprint('hateword', __name__)
+
 
 # ============================================================================
 # API for managing and using tweet data
