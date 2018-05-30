@@ -17,6 +17,9 @@ app.config.from_object(config)
 # set secret key for session management
 app.secret_key = os.urandom(16)
 
+# placeholder for Twitter's streaming object
+app.twitter_stream = None
+
 
 # ============================================================================
 

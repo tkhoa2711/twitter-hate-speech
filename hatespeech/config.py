@@ -21,6 +21,7 @@ class Config:
     MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/twitter')
     PORT = int(os.environ.get('PORT', 5000))
     LOG_FILE = os.environ.get('LOG_FILE', './log.log')
+    DISK_FREE_THRESHOLD = os.environ.get('DISK_FREE_THRESHOLD',  1.0)
 
 
 class DevelopmentConfig(Config):

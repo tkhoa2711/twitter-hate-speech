@@ -1,8 +1,33 @@
 from hatespeech.config import config # NOTE: call this first to properly initialize all configs
 from hatespeech.api import app
 from hatespeech.api import twitter
+from hatespeech.api.logging2 import log
 from flask_script import Manager
 
+
+# ============================================================================
+# Essential app initialization here
+
+def init_app():
+    stream = twitter.create_stream()
+    app.twitter_stream = stream
+    app.twitter_stream.start()
+
+    from hatespeech.disk_space_monitor import monitor_disk_usage
+    monitor_disk_usage()
+
+
+def teardown_app():
+    if app.twitter_stream:
+        app.twitter_stream.stop()
+
+    # stop all dependent threads
+    from hatespeech.api.utils import stop_all_threads
+    stop_all_threads()
+
+
+# ============================================================================
+# Commands for executing the managing script
 
 manager = Manager(app)
 
@@ -12,11 +37,8 @@ def dev():
     """
     Run the server in development mode.
     """
-    stream = twitter.create_stream()
-    app.twitter_stream = stream
-    app.twitter_stream.start()
+    init_app()
     app.run(debug=True, host='0.0.0.0', port=config.PORT, use_reloader=False, threaded=True)
-    app.twitter_stream.stop()
 
 
 @manager.command
@@ -24,6 +46,7 @@ def prod():
     """
     Run the server in production mode.
     """
+    init_app()
     app.run(debug=False)
 
 
@@ -52,4 +75,8 @@ def recreate_db():
 
 
 if __name__ == '__main__':
-    manager.run()
+    try:
+        manager.run()
+    except (KeyboardInterrupt, SystemExit):
+        log.info("Stopping the app")
+        teardown_app()
