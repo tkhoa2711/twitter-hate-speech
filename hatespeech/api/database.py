@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from flask_pymongo import PyMongo
 from hatespeech.api.app import app
+from hatespeech.api.logging2 import log
 
 try:
     mongo = PyMongo(app)
@@ -43,6 +44,7 @@ def recreate_db():
     db.user.create_index([('username', pymongo.ASCENDING)], unique=True)
     script.populate_user_data()
 
+    log.info("Recreated database successfully")
     return '', http.HTTPStatus.NO_CONTENT
 
 
