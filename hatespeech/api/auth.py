@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import request, session, Blueprint, Response
+from flask import request, session, Blueprint, Response, jsonify
 from hatespeech.api.app import app
 from hatespeech.api.database import db
 from hatespeech.api.logging2 import log
@@ -34,6 +34,11 @@ def logout():
     session.pop('username', None)
     log.info(f"User [{username}] has just logged out")
     return 'Logged out'
+
+
+@app.route('/auth/is_logged_in')
+def is_logged_in():
+    return jsonify(result=True if 'username' in session else False)
 
 
 def authorize(func):
