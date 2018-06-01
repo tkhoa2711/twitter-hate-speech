@@ -1,5 +1,6 @@
 import http
 import logging
+import pymongo
 from datetime import datetime
 from flask_pymongo import PyMongo
 from hatespeech.api.app import app
@@ -61,3 +62,17 @@ def clean_old_data(days=7):
 
     log.info(f"Deleted {result.deleted_count} tweet records")
     return '', http.HTTPStatus.NO_CONTENT
+
+
+def force_clean_old_tweets(count=1000):
+    """
+    Force delete a number of old tweets to make up for more space.
+    :param count:   the number of tweets to delete
+    """
+    docs = db.result.find({}, ('_id',)) \
+        .sort({'timestamp_ms': pymongo.ASCENDING}) \
+        .limit(count)
+    selector = {'_id': {'$in': [doc['_id'] for doc in docs]}}
+    result = db.result.delete_many(selector)
+
+    log.info(f"Deleted {result.deleted_count} tweet records")
