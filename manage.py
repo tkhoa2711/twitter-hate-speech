@@ -1,6 +1,9 @@
 from hatespeech.config import config # NOTE: call this first to properly initialize all configs
-from hatespeech.api import app
-from hatespeech.api import twitter
+from hatespeech.api import (
+    app,
+    sentiment,
+    twitter,
+)
 from hatespeech.api.logging2 import log
 from flask_script import Manager
 
@@ -9,6 +12,8 @@ from flask_script import Manager
 # Essential app initialization here
 
 def init_app():
+    sentiment.init()
+
     stream = twitter.create_stream()
     app.twitter_stream = stream
     app.twitter_stream.start()
@@ -72,6 +77,15 @@ def recreate_db():
     """
     from hatespeech.api.database import recreate_db
     recreate_db()
+
+
+@manager.command
+def train_model():
+    """
+    Train the Naive Bayes classifier model for sentiment analysis.
+    """
+    from hatespeech.api.sentiment import train_and_test_classifier
+    train_and_test_classifier()
 
 
 if __name__ == '__main__':

@@ -1,16 +1,16 @@
-import functools
 import json
 import pymongo
 import tweepy
-from hatespeech.api import app, hateword, gender, location
-from hatespeech.api.database import mongo
-from hatespeech.api.logging2 import log
-from hatespeech.api.utils import safe_get, safe_get_dict
-from hatespeech.config import config
 from bson import json_util
 from datetime import datetime
 from flask import Blueprint, Response, jsonify, request, \
     copy_current_request_context, stream_with_context
+
+from hatespeech.api import app, hateword, gender, location, sentiment
+from hatespeech.api.database import mongo
+from hatespeech.api.logging2 import log
+from hatespeech.api.utils import safe_get, safe_get_dict
+from hatespeech.config import config
 
 
 mod = Blueprint('twitter', __name__)
@@ -63,7 +63,7 @@ def export_tweets():
             "city",
             "state",
             "country_code",
-            "sentiment_level",
+            "sentiment",
         ])
 
         writer.writeheader()
@@ -95,7 +95,7 @@ def export_tweets():
                 'city': safe_get_dict(tweet, ['place', 'city'], ''),
                 'state': safe_get_dict(tweet, ['place', 'state'], ''),
                 'country_code': safe_get_dict(tweet, ['place', 'country_code'], ''),
-                'sentiment_level': tweet.get('sentiment_level', ''),
+                'sentiment': tweet.get('sentiment', ''),
             })
             output.seek(0)
             yield output.read()
@@ -147,7 +147,7 @@ def search_tweets():
         return Response("Keyword is not specified", 400)
 
     api = _get_api()
-    result = (_preprocess(tweet._json) for tweet in tweepy.Cursor(api.search, q=keyword, count=limit).items(limit))
+    result = (process(tweet._json) for tweet in tweepy.Cursor(api.search, q=keyword, count=limit).items(limit))
     return jsonify(result=[
         json.loads(json.dumps(item, indent=4, default=json_util.default))
         for item in result
@@ -187,7 +187,7 @@ class StreamListener(tweepy.StreamListener):
                     mongo.db.unknown.insert(data)
                 return
 
-            tweet = _preprocess(data)
+            tweet = process(data)
 
             with app.app_context():
                 mongo.db.result.insert(tweet)
@@ -206,7 +206,6 @@ class Stream(tweepy.Stream):
     def start(self):
         """Start or resume the streaming if it's been stopped before."""
         log.info("Start listening for tweets data")
-        # TODO: set the stream parameters correctly
         self.filter(
             track=hateword.get_hate_word_list(),
             languages=['en'],
@@ -246,37 +245,14 @@ def create_stream():
 
     return stream
 
+
 # ============================================================================
 # Helper function
 
-
-def remove_punctuation(text):
+def process(tweet):
     """
-    Remove punctuation from a text.
-    :param text:    the text input
-    :return:        the text with punctuation removed
-    """
-    if not hasattr(remove_punctuation, 'translator'):
-        import string
-        remove_punctuation.translator = str.maketrans('', '', string.punctuation)
+    Perform processing of tweet data.
 
-    return text.translate(remove_punctuation.translator)
-
-
-def analyse_sentiment(tweet):
-    """
-    Perform sentiment analysis of the tweet
-    :param tweet:   the tweet object
-    :return:        nothing, the tweet object will be updated inline
-    """
-    # TODO: implementation
-    import random
-    tweet['sentiment_level'] = random.randint(0, 5)
-
-
-def _preprocess(tweet):
-    """
-    Perform pre-processing of tweet data.
     :param tweet:   the tweet object
     :return:        a new tweet object
     """
@@ -298,7 +274,7 @@ def _preprocess(tweet):
 
         gender.detect_gender(tweet)
         location.detect_location(tweet)
-        analyse_sentiment(tweet)
+        sentiment.classify(tweet)
 
         return {
             'id': tweet['id_str'],
@@ -306,7 +282,7 @@ def _preprocess(tweet):
                 'id': tweet['user']['id_str'],
                 'name': tweet['user']['name'],
                 'screen_name': tweet['user']['screen_name'],
-                'gender':tweet['user']['gender'],
+                'gender': tweet['user']['gender'],
             },
             'timestamp': tweet['created_at'],
             'timestamp_ms': int(tweet['timestamp_ms']),
@@ -323,6 +299,7 @@ def _preprocess(tweet):
                 'hashtags': hash_tags,
                 'user_mentions': user_mentions,
             },
+            'sentiment': tweet.get('sentiment')
         }
     except Exception as e:
         log.exception(f"Error during processing tweet [${tweet['id']}]")
