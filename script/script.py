@@ -7,7 +7,7 @@ def populate_hateword_data():
     """
     Populate the `hateword` table in MongoDB with data from CSV file.
     """
-    with open("./script/hate-speech-lexicons/refined_ngram_dict.csv") as f:
+    with open("./data/hate-speech-lexicons/refined_ngram_dict.csv") as f:
         lst = [row.split(',', 1)[0] for row in f]
         lst = lst[1:]
 
