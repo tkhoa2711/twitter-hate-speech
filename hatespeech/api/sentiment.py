@@ -21,9 +21,9 @@ CLASSIFIER = None
 FEATURE_FUNC = None
 
 SENTIMENT_MAP = {
-    'Negative': 0,
+    'Negative': 2,
     'Neutral': 1,
-    'Positive': 2,
+    'Positive': 0,
 }
 
 nltk.download('stopwords')
