@@ -26,6 +26,7 @@ SENTIMENT_MAP = {
     'Positive': 1,
 }
 
+nltk.download('stopwords')
 STOPWORDS = set(stopwords.words("english"))
 
 
