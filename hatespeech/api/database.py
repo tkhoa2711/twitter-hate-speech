@@ -70,7 +70,7 @@ def force_clean_old_tweets(count=1000):
     :param count:   the number of tweets to delete
     """
     docs = db.result.find({}, ('_id',)) \
-        .sort({'timestamp_ms': pymongo.ASCENDING}) \
+        .sort('timestamp_ms', pymongo.ASCENDING) \
         .limit(count)
     selector = {'_id': {'$in': [doc['_id'] for doc in docs]}}
     result = db.result.delete_many(selector)
