@@ -175,6 +175,12 @@ class StreamListener(tweepy.StreamListener):
         # returning non-False reconnects the stream, with backoff
         # TODO: should we do anything else
 
+    def on_disconnect(self, notice):
+        log.warn(f"Twitter streaming disconnected: {notice}")
+
+    def on_timeout(self):
+        log.warn(f"Twitter streaming timed out")
+
     def on_limit(self, track):
         log.info(f"Tracking info: {track}")
 
@@ -214,6 +220,7 @@ class Stream(tweepy.Stream):
         self.filter(
             track=hateword.get_hate_word_list(),
             languages=['en'],
+            stall_warnings=True,
             async=True)
 
     def stop(self):
