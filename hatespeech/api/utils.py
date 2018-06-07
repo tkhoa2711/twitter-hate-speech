@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+import pymongo
 import threading
 from flask import jsonify
+from hatespeech.api.logging2 import log
 
 
 def create_response(data={}, status=200, message=''):
@@ -118,7 +120,7 @@ class StoppableThread(threading.Thread):
         """
         return self.__stop.is_set()
 
-    def sleep(self, interval):
+    def sleep(self, interval=None):
         """
         Sleep for a given interval or until being stopped intentionally.
 
@@ -152,3 +154,61 @@ def stop_all_threads():
     global __threads
     for t in __threads:
         t.stop()
+
+
+# ============================================================================
+
+class MongoObservable(StoppableThread):
+
+    def __init__(self, collection, pipeline=None, on_change=None):
+        super(MongoObservable, self).__init__()
+        self._collection = collection
+        self._pipeline = pipeline
+        self._cursor = None
+        self._on_change = on_change
+
+        start_thread(self)
+
+    def run(self):
+        # start watching for changes in a different thread
+        from threading import Thread
+        worker = Thread(target=self._watch)
+        worker.start()
+
+        # wait until being stopped
+        self.sleep()
+
+        # stop the MongoDB change stream and cleanup
+        try:
+            if self._cursor:
+                self._cursor.close()
+            worker.join()
+        except Exception:
+            log.exception("Error while stopping the thread")
+
+    def _watch(self):
+        while not self.is_stopped():
+            log.debug(f"Start watching for changes for {self._collection.name}")
+            try:
+                self._cursor = self._collection.watch(self._pipeline)
+                while not self.is_stopped():
+                    try:
+                        doc = next(self._cursor)
+                        if doc and callable(self._on_change):
+                            self._on_change()
+                    except StopIteration:
+                        break
+            except pymongo.errors.OperationFailure:
+                log.exception("Operation fails. Updates will not be watched")
+                self.stop()
+                break
+            except pymongo.errors.PyMongoError:
+                log.exception(f"Error during watching for updates")
+            except Exception:
+                log.exception("Other exception occurs")
+
+    def data(self):
+        """
+        Retrieve the data from the observable.
+        """
+        pass

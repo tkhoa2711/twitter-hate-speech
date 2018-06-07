@@ -2,6 +2,7 @@ from hatespeech.api.database import db
 from hatespeech.api.app import app
 from hatespeech.api.auth import authorize
 from hatespeech.api.logging2 import log
+from hatespeech.api.utils import MongoObservable
 from flask import Blueprint, Response, jsonify, request
 
 
@@ -102,3 +103,15 @@ def get_hate_word_list():
 def _normalize(word):
     word = word.lower()
     return word
+
+
+class HatewordObservable(MongoObservable):
+
+    def __init__(self, pipeline=None, on_change=None):
+        super(HatewordObservable, self).__init__(db.hateword, pipeline=pipeline, on_change=on_change)
+
+    def data(self):
+        """
+        Retrieve the data from the observable.
+        """
+        return get_hate_word_list()

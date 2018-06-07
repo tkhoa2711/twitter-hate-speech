@@ -7,7 +7,7 @@ from flask import Blueprint, Response, jsonify, request, \
     copy_current_request_context, stream_with_context
 
 from hatespeech.api import app, hateword, gender, location, sentiment
-from hatespeech.api.database import mongo
+from hatespeech.api.database import db
 from hatespeech.api.logging2 import log
 from hatespeech.api.utils import safe_get, safe_get_dict
 from hatespeech.config import config
@@ -32,7 +32,7 @@ def tweets():
     try:
         limit = int(request.args.get('limit', 0))
 
-        result = mongo.db.result.find()\
+        result = db.result.find()\
             .sort('$natural', pymongo.DESCENDING)\
             .limit(limit)
         return jsonify(result=[
@@ -84,7 +84,7 @@ def export_tweets():
         # the number of result to get
         limit = int(request.args.get('limit', 0))
 
-        for tweet in mongo.db.result.find()\
+        for tweet in db.result.find()\
                 .sort('$natural', pymongo.DESCENDING)\
                 .limit(limit):
             try:
@@ -142,7 +142,7 @@ def filter_tweets_by_date():
             log.exception("Date(s) are invalid")
             return Response("Date(s) are invalid", status=400)
 
-        result = mongo.db.result.find({'timestamp_ms': {'$gte': start_date, '$lt': end_date}})
+        result = db.result.find({'timestamp_ms': {'$gte': start_date, '$lt': end_date}})
 
         return jsonify(result=[
             json.loads(json.dumps(item, indent=4, default=json_util.default))
@@ -222,14 +222,12 @@ class StreamListener(tweepy.StreamListener):
             elif 'text' not in data:
                 log.warn(f"Unknown message type: {data}")
                 # TODO: what to do with unknown message?
-                with app.app_context():
-                    mongo.db.unknown.insert(data)
+
+                db.unknown.insert(data)
                 return
 
             tweet = process(data)
-
-            with app.app_context():
-                mongo.db.result.insert(tweet)
+            db.result.insert(tweet)
         except Exception as e:
             log.exception("Exception on processing tweet")
 
@@ -242,17 +240,30 @@ class Stream(tweepy.Stream):
     def __init__(self, auth, listener, **options):
         super().__init__(auth, listener, **options)
 
+        from hatespeech.api.hateword import HatewordObservable
+        self._keywords = HatewordObservable(on_change=self._on_hateword_updated)
+
+    def _on_hateword_updated(self):
+        log.info("Hatewords were just updated")
+        if self.running:
+            self.stop()
+            self.start()
+
     def start(self):
-        """Start or resume the streaming if it's been stopped before."""
+        """
+        Start or resume the streaming if it's been stopped before.
+        """
         log.info("Start listening for tweets data")
         self.filter(
-            track=hateword.get_hate_word_list(),
+            track=self._keywords.data(),
             languages=['en'],
             stall_warnings=True,
             async=True)
 
     def stop(self):
-        """Pause the streaming process."""
+        """
+        Pause the streaming process.
+        """
         log.info("Stopping the stream")
         # NOTE: this will stop after the next tweet arrives
         self.running = False
