@@ -15,6 +15,8 @@ from hatespeech.config import config
 
 mod = Blueprint('twitter', __name__)
 
+KEYWORDS = []
+
 # ============================================================================
 # API for managing and using tweet data
 # TODO: implementation
@@ -54,8 +56,8 @@ def export_tweets():
             "timestamp",
             "text",
             "hashtags",
-            # "reply_to",
-            # "mention",
+            "reply_to",
+            "mentions",
             "keywords",
             "gender",
             "longitude",
@@ -81,25 +83,28 @@ def export_tweets():
         for tweet in mongo.db.result.find()\
                 .sort('$natural', pymongo.DESCENDING)\
                 .limit(limit):
-            writer.writerow({
-                'id': tweet['id'],
-                'timestamp': tweet['timestamp'],
-                'text': tweet['text'],
-                'hashtags': ','.join(tweet['entities'].get('hashtags', [])),
-                # reply to
-                # mention
-                'keywords': ','.join(tweet.get('keywords', [])),
-                'gender': tweet.get('gender', ''),
-                'longitude': get_long(tweet),
-                'latitude': get_lat(tweet),
-                'city': safe_get_dict(tweet, ['place', 'city'], ''),
-                'state': safe_get_dict(tweet, ['place', 'state'], ''),
-                'country_code': safe_get_dict(tweet, ['place', 'country_code'], ''),
-                'sentiment': tweet.get('sentiment', ''),
-            })
-            output.seek(0)
-            yield output.read()
-            output.truncate(0)
+            try:
+                writer.writerow({
+                    'id': tweet['id'],
+                    'timestamp': tweet['timestamp'],
+                    'text': tweet['text'],
+                    'hashtags': ','.join(tweet['entities'].get('hashtags', [])),
+                    'reply to': tweet.get('reply_to', ''),
+                    'mentions': ','.join(i['screen_name'] for i in tweet['entities']['user_mentions']),
+                    'keywords': ','.join(tweet.get('keywords', [])),
+                    'gender': tweet.get('gender', ''),
+                    'longitude': get_long(tweet),
+                    'latitude': get_lat(tweet),
+                    'city': safe_get_dict(tweet, ['place', 'city'], ''),
+                    'state': safe_get_dict(tweet, ['place', 'state'], ''),
+                    'country_code': safe_get_dict(tweet, ['place', 'country_code'], ''),
+                    'sentiment': tweet.get('sentiment', ''),
+                })
+                output.seek(0)
+                yield output.read()
+                output.truncate(0)
+            except Exception:
+                log.exception(f"Error during exporting tweet [{tweet['id']}]")
 
     response = Response(stream_with_context(generate()),
                         mimetype='text/csv')
@@ -239,10 +244,6 @@ def create_stream():
     api = _get_api()
     listener = StreamListener(api=api)
     stream = Stream(auth=api.auth, listener=listener)
-
-    # TODO: implement a mechanism to stop the stream on-demand
-    # HINT: return false either in on_data() or on_status()
-
     return stream
 
 
@@ -257,10 +258,13 @@ def process(tweet):
     :return:        a new tweet object
     """
     try:
+        # extract the full text from the tweet
         if tweet.get('truncated') and tweet.get('extended_tweet'):
             full_text = tweet['extended_tweet']['full_text']
             tweet['text'] = full_text
 
+        # tweets obtained via Search API do not have `timestamp_ms` field by default
+        # we need to derive it from `created_at`
         if not tweet.get('timestamp_ms'):
             datetime_format = '%a %b %d %H:%M:%S %z %Y'
             tweet['timestamp_ms'] = datetime.strptime(tweet['created_at'], datetime_format).timestamp() * 1000
@@ -272,6 +276,7 @@ def process(tweet):
             'id': i['id_str'],
         } for i in tweet['entities'].get('user_mentions', [])]
 
+        # more complex processing steps
         gender.detect_gender(tweet)
         location.detect_location(tweet)
         sentiment.classify(tweet)
@@ -294,7 +299,7 @@ def process(tweet):
                 'country_code': safe_get_dict(tweet, ['place', 'country_code']),
             },
             'keywords': None, # TODO
-            'reply_to': None, # TODO
+            'reply_to': tweet.get('in_reply_to_screen_name'),
             'entities': {
                 'hashtags': hash_tags,
                 'user_mentions': user_mentions,
@@ -303,3 +308,12 @@ def process(tweet):
         }
     except Exception as e:
         log.exception(f"Error during processing tweet [${tweet['id']}]")
+
+
+def _get_keywords_detected(tweet):
+    text = tweet['text']
+
+    # TODO: this is an extra and redundant processing step, it may slow down the process
+    # if it does, we should find another solution
+    words = sentiment._preprocess_text(text)
+    return set(words).intersection(KEYWORDS)
