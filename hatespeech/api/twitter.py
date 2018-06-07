@@ -93,9 +93,9 @@ def export_tweets():
                     'timestamp': tweet['timestamp'],
                     'text': tweet['text'],
                     'hashtags': ','.join(tweet['entities'].get('hashtags', [])),
-                    'reply to': tweet.get('reply_to', ''),
+                    'reply_to': tweet.get('reply_to', ''),
                     'mentions': ','.join(i['screen_name'] for i in tweet['entities']['user_mentions']),
-                    'keywords': ','.join(tweet.get('keywords', [])),
+                    'keywords': ','.join(tweet.get('keywords') if tweet.get('keywords') is not None else []),
                     'gender': tweet.get('gender', ''),
                     'longitude': get_long(tweet),
                     'latitude': get_lat(tweet),
@@ -338,7 +338,7 @@ def process(tweet):
                 'state': safe_get_dict(tweet, ['place', 'state']),
                 'country_code': safe_get_dict(tweet, ['place', 'country_code']),
             },
-            'keywords': None, # TODO
+            'keywords': [], # TODO
             'reply_to': tweet.get('in_reply_to_screen_name'),
             'entities': {
                 'hashtags': hash_tags,
