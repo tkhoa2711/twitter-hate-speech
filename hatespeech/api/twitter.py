@@ -29,15 +29,19 @@ def tweets():
 
     :param limit:   limit the number of result to be returned
     """
-    limit = int(request.args.get('limit', 0))
+    try:
+        limit = int(request.args.get('limit', 0))
 
-    result = mongo.db.result.find()\
-        .sort('$natural', pymongo.DESCENDING)\
-        .limit(limit)
-    return jsonify(result=[
-        json.loads(json.dumps(item, indent=4, default=json_util.default))
-        for item in result
-    ])
+        result = mongo.db.result.find()\
+            .sort('$natural', pymongo.DESCENDING)\
+            .limit(limit)
+        return jsonify(result=[
+            json.loads(json.dumps(item, indent=4, default=json_util.default))
+            for item in result
+        ])
+    except Exception:
+        log.exception(f"Unable to retrieve tweets")
+        return Response("Unable to retrieve tweets", status=500)
 
 
 @app.route('/tweets/export')
@@ -106,10 +110,14 @@ def export_tweets():
             except Exception:
                 log.exception(f"Error during exporting tweet [{tweet['id']}]")
 
-    response = Response(stream_with_context(generate()),
-                        mimetype='text/csv')
-    response.headers['Content-Disposition'] = 'attachment; filename=result.csv'
-    return response
+    try:
+        response = Response(stream_with_context(generate()),
+                            mimetype='text/csv')
+        response.headers['Content-Disposition'] = 'attachment; filename=result.csv'
+        return response
+    except Exception:
+        log.exception(f"Unable to export tweets")
+        return Response("Unable to export tweets", status=500)
 
 
 @app.route('/tweets/filter/date', methods=['POST'])
@@ -117,46 +125,53 @@ def filter_tweets_by_date():
     """
     Retrieve tweets by start and end dates.
     """
-    req = request.get_json(force=True)
-    start_date = req.get('start_date')
-    end_date = req.get('end_date')
-
     try:
-        # ensure that the specified time is in UTC +0000
-        date_format = '%d/%m/%Y %z'
-        start_date = datetime.strptime(start_date + " +0000", date_format).timestamp() * 1000
-        end_date = datetime.strptime(end_date + " +0000", date_format).timestamp() * 1000
+        req = request.get_json(force=True)
+        start_date = req.get('start_date')
+        end_date = req.get('end_date')
 
-        if start_date >= end_date:
-            raise Exception("End date is equal to or earlier than start date")
+        try:
+            # ensure that the specified time is in UTC +0000
+            date_format = '%d/%m/%Y %z'
+            start_date = datetime.strptime(start_date + " +0000", date_format).timestamp() * 1000
+            end_date = datetime.strptime(end_date + " +0000", date_format).timestamp() * 1000
+
+            if start_date >= end_date:
+                raise Exception("End date is equal to or earlier than start date")
+        except Exception:
+            log.exception("Date(s) are invalid")
+            return Response("Date(s) are invalid", status=400)
+
+        result = mongo.db.result.find({'timestamp_ms': {'$gte': start_date, '$lt': end_date}})
+
+        return jsonify(result=[
+            json.loads(json.dumps(item, indent=4, default=json_util.default))
+            for item in result
+        ])
     except Exception:
-        log.exception("Date(s) are invalid")
-        return Response("Date(s) are invalid", status=400)
-
-    result = mongo.db.result.find({'timestamp_ms': {'$gte': start_date, '$lt': end_date}})
-
-    return jsonify(result=[
-        json.loads(json.dumps(item, indent=4, default=json_util.default))
-        for item in result
-    ])
+        log.exception(f"Unable to filter tweets")
+        return Response("Unable to filter tweets", status=500)
 
 
 @app.route('/tweets/search', methods=['POST'])
 def search_tweets():
-    # TODO: implementation
-    req = request.get_json(force=True)
-    keyword = req.get('keyword')
-    limit = int(req.get('limit', 1000))
+    try:
+        req = request.get_json(force=True)
+        keyword = req.get('keyword')
+        limit = int(req.get('limit', 1000))
 
-    if not keyword:
-        return Response("Keyword is not specified", 400)
+        if not keyword:
+            return Response("Keyword is not specified", 400)
 
-    api = _get_api()
-    result = (process(tweet._json) for tweet in tweepy.Cursor(api.search, q=keyword, count=limit).items(limit))
-    return jsonify(result=[
-        json.loads(json.dumps(item, indent=4, default=json_util.default))
-        for item in result
-    ])
+        api = _get_api()
+        result = (process(tweet._json) for tweet in tweepy.Cursor(api.search, q=keyword, count=limit).items(limit))
+        return jsonify(result=[
+            json.loads(json.dumps(item, indent=4, default=json_util.default))
+            for item in result
+        ])
+    except Exception:
+        log.exception(f"Unable to search tweets")
+        return Response("Unable to search tweets", status=500)
 
 
 # ============================================================================
