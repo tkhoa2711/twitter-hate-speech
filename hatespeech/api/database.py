@@ -11,8 +11,8 @@ try:
     db = None
     with app.app_context():
         db = mongo.db
+        log.info(f"Connecting to database: {db.client.server_info()}")
 except Exception as e:
-    log = logging.getLogger(__name__)
     log.exception(e)
 
 
