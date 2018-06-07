@@ -164,6 +164,10 @@ def search_tweets():
 
 class StreamListener(tweepy.StreamListener):
 
+    def __init__(self, api=None):
+        super(StreamListener, self).__init__(api)
+        self._stream = None
+
     def on_connect(self):
         log.info("Connected to Twitter streaming API")
 
@@ -180,6 +184,15 @@ class StreamListener(tweepy.StreamListener):
 
     def on_timeout(self):
         log.warn(f"Twitter streaming timed out")
+
+    def on_exception(self, exception):
+        log.exception(f"Exception occurs: {exception}")
+        if self._stream():
+            if not self._stream().running:
+                # TODO: fix this issue properly
+                from time import sleep
+                sleep(2)
+                self._stream().start()
 
     def on_limit(self, track):
         log.info(f"Tracking info: {track}")
@@ -251,6 +264,11 @@ def create_stream():
     api = _get_api()
     listener = StreamListener(api=api)
     stream = Stream(auth=api.auth, listener=listener)
+
+    # create a weak reference of the stream object inside the listener
+    import weakref
+    listener._stream = weakref.ref(stream)
+
     return stream
 
 
