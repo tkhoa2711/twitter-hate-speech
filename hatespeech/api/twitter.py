@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import pymongo
 import tweepy
@@ -74,7 +75,7 @@ def export_tweets():
 
         writer.writeheader()
         output.seek(0)
-        yield output.read()
+        yield output.getvalue()
         output.truncate(0)
 
         # helper functions to retrieve coordinates
@@ -104,11 +105,13 @@ def export_tweets():
                     'country_code': safe_get_dict(tweet, ['place', 'country_code'], ''),
                     'sentiment': tweet.get('sentiment', ''),
                 })
-                output.seek(0)
-                yield output.read()
-                output.truncate(0)
+
+                yield output.getvalue()
             except Exception:
                 log.exception(f"Error during exporting tweet [{tweet['id']}]")
+            finally:
+                output.seek(0)
+                output.truncate(0)
 
     try:
         response = Response(stream_with_context(generate()),
