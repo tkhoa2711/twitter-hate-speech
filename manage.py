@@ -88,6 +88,25 @@ def train_model():
     train_and_test_classifier()
 
 
+@manager.command
+def gunicorn():
+    """
+    Start the Server with Gunicorn.
+    """
+    from gunicorn.app.base import Application
+
+    class FlaskApplication(Application):
+        def init(self, parser, opts, args):
+            return {}
+
+        def load(self):
+            init_app()
+            return app
+
+    application = FlaskApplication()
+    return application.run()
+
+
 if __name__ == '__main__':
     try:
         manager.run()
