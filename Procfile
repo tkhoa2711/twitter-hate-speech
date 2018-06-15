@@ -1,2 +1,2 @@
-web: python manage.py gunicorn
+web: python manage.py prod
 worker: python manage.py prod
