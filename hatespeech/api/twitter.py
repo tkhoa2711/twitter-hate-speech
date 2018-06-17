@@ -231,11 +231,10 @@ class StreamListener(tweepy.StreamListener):
 
             tweet = process(data)
             db.result.insert(tweet)
-        except Exception as e:
-            log.exception("Exception on processing tweet")
-
-        # TODO: remove
-        # return False
+        except pymongo.errors.DuplicateKeyError:
+            log.warn(f"Tweet [{tweet['id']}] already exists in database")
+        except Exception:
+            log.exception("Exception while processing tweet")
 
 
 class Stream(tweepy.Stream):
