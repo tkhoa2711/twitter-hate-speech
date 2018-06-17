@@ -1,5 +1,4 @@
 import http
-import logging
 import pymongo
 from datetime import datetime
 from flask_pymongo import PyMongo
@@ -10,8 +9,9 @@ try:
     mongo = PyMongo(app)
     db = None
     with app.app_context():
+        log.info(f"Establishing database connection")
         db = mongo.db
-        log.info(f"Connecting to database: {db.client.server_info()}")
+        log.info(f"Connected to database: {db.client.server_info()}")
 except Exception as e:
     log.exception(e)
 

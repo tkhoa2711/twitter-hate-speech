@@ -11,7 +11,6 @@ app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
 # configure environment variables
-env = os.environ.get('FLASK_ENV', 'dev')
 app.config.from_object(config)
 
 # set secret key for session management
