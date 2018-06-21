@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+import dill as pickle
 import json
 import pymongo
+import redis
 import tweepy
 from bson import json_util
 from datetime import datetime
@@ -17,6 +19,8 @@ from hatespeech.config import config
 mod = Blueprint('twitter', __name__)
 
 KEYWORDS = []
+
+QUEUE = redis.from_url(config.REDIS_URL)
 
 # ============================================================================
 # API for managing and using tweet data
@@ -229,10 +233,8 @@ class StreamListener(tweepy.StreamListener):
                 db.unknown.insert(data)
                 return
 
-            tweet = process(data)
-            db.result.insert(tweet)
-        except pymongo.errors.DuplicateKeyError:
-            log.warn(f"Tweet [{tweet['id']}] already exists in database")
+            msg = pickle.dumps(data)
+            QUEUE.rpush(config.REDIS_QUEUE_KEY, msg)
         except Exception:
             log.exception("Exception while processing tweet")
 
@@ -311,6 +313,7 @@ def process(tweet):
     :return:        a new tweet object
     """
     try:
+        log.debug(f"Processing tweet[{tweet['id']}]")
         # extract the full text from the tweet
         if tweet.get('truncated') and tweet.get('extended_tweet'):
             full_text = tweet['extended_tweet']['full_text']
@@ -334,7 +337,7 @@ def process(tweet):
         location.detect_location(tweet)
         sentiment.classify(tweet)
 
-        return {
+        t = {
             'id': tweet['id_str'],
             'user': {
                 'id': tweet['user']['id_str'],
@@ -359,8 +362,11 @@ def process(tweet):
             },
             'sentiment': tweet.get('sentiment')
         }
+        db.result.insert(t)
+    except pymongo.errors.DuplicateKeyError:
+        log.warn(f"Tweet [{tweet['id']}] already exists in database")
     except Exception as e:
-        log.exception(f"Error during processing tweet [${tweet['id']}]")
+        log.exception(f"Error during processing tweet [{tweet['id']}]")
 
 
 def _get_keywords_detected(tweet):
