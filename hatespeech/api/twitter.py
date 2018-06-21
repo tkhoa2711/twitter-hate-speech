@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import pymongo
+import time
 import tweepy
 from bson import json_util
 from datetime import datetime
@@ -190,12 +191,13 @@ class StreamListener(tweepy.StreamListener):
         log.info("Connected to Twitter streaming API")
 
     def on_error(self, status_code):
-        log.error('Error status: ' + repr(status_code))
+        log.error('Error from Twitter: ' + repr(status_code))
         if status_code == 420:
-            return False
-
-        # returning non-False reconnects the stream, with backoff
-        # TODO: should we do anything else
+                # use Tweepy's default waiting mechanism before trying to reconnect
+                return True
+        else:
+            # ignore other types of errors and just try to reconnect
+            return True
 
     def on_disconnect(self, notice):
         log.warn(f"Twitter streaming disconnected: {notice}")
@@ -204,12 +206,11 @@ class StreamListener(tweepy.StreamListener):
         log.warn(f"Twitter streaming timed out")
 
     def on_exception(self, exception):
-        log.exception(f"Exception occurs: {exception}")
+        log.exception(f"Exception from Twitter streaming: {exception}")
         if self._stream():
             if not self._stream().running:
                 # TODO: fix this issue properly
-                from time import sleep
-                sleep(2)
+                time.sleep(2)
                 self._stream().start()
 
     def on_limit(self, track):
