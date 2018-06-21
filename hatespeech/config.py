@@ -23,16 +23,16 @@ class Config:
     LOG_FILE = os.environ.get('LOG_FILE', './log.log')
     DISK_FREE_THRESHOLD = float(os.environ.get('DISK_FREE_THRESHOLD',  1.0))
 
-
-class DevelopmentConfig(Config):
-    DEBUG = True
-
     TWITTER = dotdict({
         'CONSUMER_KEY': os.environ.get('TWITTER_CONSUMER_KEY', ''),
         'CONSUMER_SECRET': os.environ.get('TWITTER_CONSUMER_SECRET', ''),
         'ACCESS_TOKEN': os.environ.get('TWITTER_ACCESS_TOKEN', ''),
         'ACCESS_SECRET': os.environ.get('TWITTER_ACCESS_SECRET', ''),
     })
+
+
+class DevelopmentConfig(Config):
+    DEBUG = True
 
 
 class ProductionConfig(Config):
