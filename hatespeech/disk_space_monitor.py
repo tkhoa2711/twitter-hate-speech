@@ -10,7 +10,7 @@ class _MonitorDiskUsageThread(StoppableThread):
         interval = 60   # seconds
         while not self.is_stopped():
             try:
-                free = _get_free_space()
+                free = _get_percent_free_space()
                 log.info(f"Disk usage: {free}% free")
 
                 threshold = config.DISK_FREE_THRESHOLD
@@ -18,11 +18,11 @@ class _MonitorDiskUsageThread(StoppableThread):
                     log.warn(f"Disk space left {free:.2f}% is below threshold of {threshold:.2f}%")
                     clean_old_data(days=7)
 
-                    free = _get_free_space()
+                    free = _get_percent_free_space()
                     while free < threshold:
                         log.warn(f"Disk space left {free:.2f}% is below threshold of {threshold:.2f}%")
                         force_clean_old_tweets(count=1000)
-                        free = _get_free_space()
+                        free = _get_percent_free_space()
 
                     log.info(f"Finished cleaning disk space [{free}% free]")
             except Exception:
@@ -33,7 +33,7 @@ class _MonitorDiskUsageThread(StoppableThread):
                 self.sleep(interval)
 
 
-def _get_free_space():
+def _get_percent_free_space():
     """
     Get free disk space in percentage.
     """
