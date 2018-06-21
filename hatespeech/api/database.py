@@ -4,6 +4,8 @@ from datetime import datetime
 from flask_pymongo import PyMongo
 from hatespeech.api.app import app
 from hatespeech.api.logging2 import log
+from hatespeech.config import config
+
 
 try:
     mongo = PyMongo(app)
@@ -34,11 +36,27 @@ def recreate_db():
     script.populate_hateword_data()
 
     # table for storing tweets
+    # NOTE: we do not use this table anymore
     db.tweet.drop()
 
     # table for storing processed tweets
     db.result.drop()
+
+    # calculate the size of this capped collection
+    from shutil import disk_usage
+    space_usage = disk_usage('.')
+    suggested_size = space_usage.total * (1 - config.DISK_FREE_THRESHOLD/100.0)
+    if suggested_size > space_usage.free:
+        suggested_size = space_usage.free * (1 - config.DISK_FREE_THRESHOLD/100.0)
+
+    db.create_collection(
+        'result',
+        capped=True,
+        size=suggested_size,
+        autoIndexId=False,
+    )
     db.result.create_index([('id', pymongo.ASCENDING)], unique=True)
+    log.info(f"Storing tweets in a collection of max size {db.result.options()['size']/(2**20):.2f}MB")
 
     # table for storing user info
     db.user.drop()

@@ -18,8 +18,10 @@ def init_app():
     app.twitter_stream = stream
     app.twitter_stream.start()
 
-    from hatespeech.disk_space_monitor import monitor_disk_usage
-    monitor_disk_usage()
+    # start monitoring disk space only if mongodb is running in the same host
+    if any(i in config.MONGO_URI for i in ('localhost', '127.0.0.1')):
+        from hatespeech.disk_space_monitor import monitor_disk_usage
+        monitor_disk_usage()
 
 
 def teardown_app():
