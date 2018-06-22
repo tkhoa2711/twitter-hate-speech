@@ -41,18 +41,10 @@ def recreate_db():
 
     # table for storing processed tweets
     db.result.drop()
-
-    # calculate the size of this capped collection
-    from shutil import disk_usage
-    space_usage = disk_usage('.')
-    suggested_size = space_usage.total * (1 - config.DISK_FREE_THRESHOLD/100.0)
-    if suggested_size > space_usage.free:
-        suggested_size = space_usage.free * (1 - config.DISK_FREE_THRESHOLD/100.0)
-
     db.create_collection(
         'result',
         capped=True,
-        size=suggested_size,
+        size=_get_tweet_collection_size(),
         autoIndexId=False,
     )
     db.result.create_index([('id', pymongo.ASCENDING)], unique=True)
@@ -65,6 +57,24 @@ def recreate_db():
 
     log.info("Recreated database successfully")
     return '', http.HTTPStatus.NO_CONTENT
+
+
+def _get_tweet_collection_size():
+    """
+    Get the suggested size for the tweet collection.
+    :return:    the collection size in byte
+    """
+    if config.TWEET_STORE_MAX_SIZE > 0:
+        # use the exact specified size if possible
+        return config.TWEET_STORE_MAX_SIZE
+    else:
+        # otherwise, calculate the suggested size based on the percentage of disk space
+        from shutil import disk_usage
+        space_usage = disk_usage('.')
+        suggested_size = space_usage.total * (1 - config.DISK_FREE_THRESHOLD/100.0)
+        if suggested_size > space_usage.free:
+            suggested_size = space_usage.free * (1 - config.DISK_FREE_THRESHOLD/100.0)
+        return suggested_size
 
 
 @app.route('/db/clean')

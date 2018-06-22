@@ -22,6 +22,7 @@ class Config:
     PORT = int(os.environ.get('PORT', 5000))
     LOG_FILE = os.environ.get('LOG_FILE', './log.log')
     DISK_FREE_THRESHOLD = float(os.environ.get('DISK_FREE_THRESHOLD',  1.0))
+    TWEET_STORE_MAX_SIZE = float(os.environ.get('TWEET_STORE_MAX_SIZE', 0)) * (2**20)
 
     TWITTER = dotdict({
         'CONSUMER_KEY': os.environ.get('TWITTER_CONSUMER_KEY', ''),
