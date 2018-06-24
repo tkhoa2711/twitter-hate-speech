@@ -22,6 +22,13 @@ class Config:
     PORT = int(os.environ.get('PORT', 5000))
     LOG_FILE = os.environ.get('LOG_FILE', './log.log')
     DISK_FREE_THRESHOLD = float(os.environ.get('DISK_FREE_THRESHOLD',  1.0))
+
+    # operation mode
+    # TODO: ensure the mode is always correct
+    OPERATION_MODE = os.environ.get('OPERATION_MODE', 'normal').lower()
+
+    # message queue config
+    MESSAGE_QUEUE_TYPE = os.environ.get('MESSAGE_QUEUE_TYPE', 'redis').lower()
     REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
     REDIS_QUEUE_KEY = os.environ.get('REDIS_QUEUE_KEY', 'tweet')
 

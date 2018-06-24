@@ -2,7 +2,6 @@
 import dill as pickle
 import json
 import pymongo
-import redis
 import tweepy
 from bson import json_util
 from datetime import datetime
@@ -11,6 +10,7 @@ from flask import Blueprint, Response, jsonify, request, \
 
 from hatespeech.api import app, hateword, gender, location, sentiment
 from hatespeech.api.database import db
+from hatespeech.api.mq import connect_to_message_queue
 from hatespeech.api.logging2 import log
 from hatespeech.api.utils import safe_get, safe_get_dict
 from hatespeech.config import config
@@ -20,7 +20,7 @@ mod = Blueprint('twitter', __name__)
 
 KEYWORDS = []
 
-QUEUE = redis.from_url(config.REDIS_URL)
+QUEUE = connect_to_message_queue() if config.OPERATION_MODE == 'mq' else None
 
 # ============================================================================
 # API for managing and using tweet data
@@ -233,8 +233,10 @@ class StreamListener(tweepy.StreamListener):
                 db.unknown.insert(data)
                 return
 
-            msg = pickle.dumps(data)
-            QUEUE.rpush(config.REDIS_QUEUE_KEY, msg)
+            if config.OPERATION_MODE == 'normal':
+                process(data)
+            elif config.OPERATION_MODE == 'mq':
+                QUEUE.push(data)
         except Exception:
             log.exception("Exception while processing tweet")
 
