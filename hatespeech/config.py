@@ -31,6 +31,19 @@ class Config:
         'ACCESS_SECRET': os.environ.get('TWITTER_ACCESS_SECRET', ''),
     })
 
+    # operation mode
+    # TODO: ensure the mode is always correct
+    OPERATION_MODE = os.environ.get('OPERATION_MODE', 'normal').lower()
+
+    # message queue config
+    MESSAGE_QUEUE_TYPE = os.environ.get('MESSAGE_QUEUE_TYPE', 'redis').lower()
+    REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
+    REDIS_QUEUE_KEY = os.environ.get('REDIS_QUEUE_KEY', 'tweet')
+
+
+class DevelopmentConfig(Config):
+    DEBUG = True
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

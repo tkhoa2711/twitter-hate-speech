@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import dill as pickle
 import json
 import pymongo
 import time
@@ -10,6 +11,7 @@ from flask import Blueprint, Response, jsonify, request, \
 
 from hatespeech.api import app, hateword, gender, location, sentiment
 from hatespeech.api.database import db
+from hatespeech.api.mq import connect_to_message_queue
 from hatespeech.api.logging2 import log
 from hatespeech.api.utils import safe_get, safe_get_dict
 from hatespeech.config import config
@@ -18,6 +20,8 @@ from hatespeech.config import config
 mod = Blueprint('twitter', __name__)
 
 KEYWORDS = []
+
+QUEUE = connect_to_message_queue() if config.OPERATION_MODE == 'mq' else None
 
 # ============================================================================
 # API for managing and using tweet data
@@ -230,10 +234,10 @@ class StreamListener(tweepy.StreamListener):
                 db.unknown.insert(data)
                 return
 
-            tweet = process(data)
-            db.result.insert(tweet)
-        except pymongo.errors.DuplicateKeyError:
-            log.warn(f"Tweet [{tweet['id']}] already exists in database")
+            if config.OPERATION_MODE == 'normal':
+                process(data)
+            elif config.OPERATION_MODE == 'mq':
+                QUEUE.push(data)
         except Exception:
             log.exception("Exception while processing tweet")
 
@@ -312,6 +316,7 @@ def process(tweet):
     :return:        a new tweet object
     """
     try:
+        log.debug(f"Processing tweet[{tweet['id']}]")
         # extract the full text from the tweet
         if tweet.get('truncated') and tweet.get('extended_tweet'):
             full_text = tweet['extended_tweet']['full_text']
@@ -335,7 +340,7 @@ def process(tweet):
         location.detect_location(tweet)
         sentiment.classify(tweet)
 
-        return {
+        t = {
             'id': tweet['id_str'],
             'user': {
                 'id': tweet['user']['id_str'],
@@ -360,8 +365,11 @@ def process(tweet):
             },
             'sentiment': tweet.get('sentiment')
         }
+        db.result.insert(t)
+    except pymongo.errors.DuplicateKeyError:
+        log.warn(f"Tweet [{tweet['id']}] already exists in database")
     except Exception as e:
-        log.exception(f"Error during processing tweet [${tweet['id']}]")
+        log.exception(f"Error during processing tweet [{tweet['id']}]")
 
 
 def _get_keywords_detected(tweet):

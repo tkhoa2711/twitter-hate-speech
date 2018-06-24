@@ -19,6 +19,10 @@ def init_app():
     app.twitter_stream.start()
 
 
+def init_worker():
+    sentiment.init()
+
+
 def teardown_app():
     if app.twitter_stream:
         app.twitter_stream.stop()
@@ -102,6 +106,14 @@ def gunicorn():
 
     application = FlaskApplication()
     return application.run()
+
+
+@manager.command
+def worker():
+    init_worker()
+
+    from hatespeech.api.worker import start_worker
+    start_worker()
 
 
 if __name__ == '__main__':
