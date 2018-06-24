@@ -58,7 +58,7 @@ def _extract_features(document, word_features=None):
     """
     document_words = set(document)
     return dict(
-        (f'containts({word})', (word in document_words))    # TODO: do we need 'containts'
+        (word, (word in document_words))
         for word in word_features
     )
 
@@ -75,12 +75,11 @@ def _preprocess_text(text):
     text = re.sub(r'#', '', text)               # consider hash tags as normal content
     text = _remove_punctuation(text)            # remove punctuations
     words = (word.lower() for word in text.split()
-             if len(word) >= 3                  # remove too short words
+             if word not in STOPWORDS           # not a stop word
              and not word.startswith('@')       # don't take into account user mentions
              and word != 'RT'                   # no retweet notation
              )
-    words = [word for word in words if word not in STOPWORDS]
-    return words
+    return list(words)
 
 
 def _remove_punctuation(text):
@@ -132,6 +131,7 @@ def train_and_test_classifier():
     # extract word features
     word_features = _get_word_features(_get_words_in_tweets(tweets))
     extract_features = partial(_extract_features, word_features=word_features)
+    log.info(f"{len(word_features)} feature(s): {word_features[:1000]}")
 
     # persist the feature extraction function to file
     with open(FEATURE_FUNC_PATH, 'wb') as f:
@@ -140,6 +140,7 @@ def train_and_test_classifier():
     # train the classifier
     training_set = nltk.classify.apply_features(extract_features, tweets)
     classifier = nltk.NaiveBayesClassifier.train(training_set)
+    classifier.show_most_informative_features(20)
 
     # persist the classifier to file
     with open(MODEL_PATH, 'wb') as f:
