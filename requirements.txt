@@ -41,5 +41,5 @@ SQLAlchemy==1.1.14
 tweepy==3.6.0
 twitter==1.18.0
 twython==3.7.0
-urllib3==1.22
+urllib3==1.24.1
 Werkzeug==0.14.1
