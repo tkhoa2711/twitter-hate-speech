@@ -1,12 +1,9 @@
-Dockerfile*
-docker-compose*
-.dockerignore
-.git
-README.md
-LICENSE
 .vscode
+.idea
 postgres-data
 __pycache__
-.DS_Store/
+.DS_Store
 migrations/
 __pycache__
+.venv/
+.git
