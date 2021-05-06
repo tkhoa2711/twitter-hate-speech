@@ -6,7 +6,7 @@ dill==0.2.7.1
 dnspython==1.15.0
 flake8==3.5.0
 Flask==1.0
-Flask-Cors==3.0.3
+Flask-Cors==3.0.9
 Flask-Migrate==2.1.1
 Flask-PyMongo==0.5.1
 Flask-Script==2.0.6
